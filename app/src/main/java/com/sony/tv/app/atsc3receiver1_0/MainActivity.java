@@ -17,9 +17,11 @@ package com.sony.tv.app.atsc3receiver1_0;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 
 import com.google.android.exoplayer2.upstream.DataSpec;
@@ -31,7 +33,6 @@ import com.sony.tv.app.atsc3receiver1_0.app.FluteTaskManagerBase;
 import com.sony.tv.app.atsc3receiver1_0.app.LLSReceiver;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 /*
  * MainActivity class that loads MainFragment
@@ -116,8 +117,8 @@ public class MainActivity extends Activity {
                     }
                     startSignalingFluteSession(type);
                     firstLLS =false;
-                    if (!fragmentsInitialized)
-                        initFragments();
+//                    if (!fragmentsInitialized)
+//                       initFragments();
                 }
             }
 
@@ -133,8 +134,8 @@ public class MainActivity extends Activity {
                     }
                     startSignalingFluteSession(type);
                     firstLLS  = false;
-                    if (!fragmentsInitialized)
-                        initFragments();
+//                    if (!fragmentsInitialized)
+//                        initFragments();
                 }
             }
 
@@ -143,7 +144,8 @@ public class MainActivity extends Activity {
                 if (fluteTaskManager.isFirst() &&
                         fluteTaskManager.isManifestFound() &&
                         fluteTaskManager.isSTSIDFound()){
-                        fluteTaskManager.stop();
+                       // fluteTaskManager.stop();
+                    launchPlayer();
                 }
             }
 
@@ -152,7 +154,7 @@ public class MainActivity extends Activity {
                 if (fluteTaskManager.isFirst() &&
                         fluteTaskManager.isManifestFound() &&
                         fluteTaskManager.isUsbdFound()){
-                        fluteTaskManager.stop();
+                       // fluteTaskManager.stop();
                 }
             }
 
@@ -185,6 +187,23 @@ public class MainActivity extends Activity {
         initLLSReceiver();
 
 //        initFragments();
+    }
+
+    private void launchPlayer() {
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                ATSC3.dataSourceIndex=0;
+                Intent intent = new Intent(MainActivity.this, PlayerActivity.class);
+                intent.setAction(PlayerActivity.ACTION_VIEW);
+                intent.setData(Uri.parse("udp://239.255.8.1:3000/ManifestUpdate_Dynamic.mpd"));
+                intent.putExtra(PlayerActivity.PREFER_EXTENSION_DECODERS, false);
+                intent.setComponent(new ComponentName("com.sony.tv.app.atsc3receiver1_0", "com.sony.tv.app.atsc3receiver1_0.PlayerActivity"));
+                startActivity(intent);
+
+            }
+        }, 5000);
     }
 
 
