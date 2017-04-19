@@ -1,0 +1,79 @@
+Content-Type: multipart/related; type="application/mbms-envelope+xml"; 
+	boundary="----=_Part_2_1414934954.1490902887005"
+
+------=_Part_2_1414934954.1490902887005
+Content-Type: application/mbms-envelope+xml
+Content-Location: envelope.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<metadataEnvelope>
+   <item metadataURI="stsid27.xml"
+         version="2"
+         contentType="application/s-tsid"/>
+   <item metadataURI="mpd27.xml"
+         version="2"
+         contentType="application/dash+xml"/>
+   <item metadataURI="usbd27.xml"
+         version="2"
+         contentType="application/mbms-user-service-description+xml"/>
+</metadataEnvelope>
+
+------=_Part_2_1414934954.1490902887005
+Content-Type: application/s-tsid
+Content-Location: stsid27.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<S-TSID>
+   <RS bsid="1234" dIpAddr="239.255.11.5" dport="5001">
+      <LS tsi="10" bw="4798751" startTime="2017-03-01T00:00:00Z">
+         <SrcFlow rt="true">
+            <EFDT version="0">
+               <FileTemplate>video/$TOI$.m4s</FileTemplate>
+               <FDTParameters>
+                  <File Content-Location="video/video_init.mp4" TOI="2576484"/>
+               </FDTParameters>
+            </EFDT>
+            <ContentInfo>1</ContentInfo>
+            <Payload codePoint="10"
+                     formatID="1"
+                     frag="0"
+                     order="1"
+                     srcFecPayloadID="1"/>
+		 </SrcFlow>
+      </LS>
+   </RS>
+</S-TSID>
+
+------=_Part_2_1414934954.1490902887005
+Content-Type: application/dash+xml
+Content-Location: mpd27.xml
+
+<?xml version="1.0" encoding="UTF-8"?><MPD xmlns="urn:mpeg:dash:schema:mpd:2011" availabilityStartTime="2017-03-01T00:00:00Z" id="Config part of url maybe?" maxSegmentDuration="PT1S" minBufferTime="PT1.500S" minimumUpdatePeriod="PT0S" profiles="urn:mpeg:dash:profile:full:2011" publishTime="2017-03-30T19:40:55Z" timeShiftBufferDepth="PT5M" type="dynamic">
+ <Period duration="PT20S" id="p2" start="PT715H41M25S">
+  <AdaptationSet lang="und" par="16:9" segmentAlignment="true">
+   <SegmentTemplate initialization="video/video_init.mp4" media="video/$Number$.m4s" startNumber="2576485" timescale="15360"><SegmentTimeline><S d="15360" r="-1"/></SegmentTimeline></SegmentTemplate>
+   <Representation bandwidth="4798751" codecs="hev1.1.6.L123.90" frameRate="60" height="1080" id="1" mimeType="video/mp4" sar="1:1" startWithSAP="1" width="1920"/>
+  </AdaptationSet>
+ </Period><Period duration="PT10S" id="p3" start="PT715H41M45S">
+  <AdaptationSet lang="und" par="16:9" segmentAlignment="true">
+   <SegmentTemplate initialization="video/video_init.mp4" media="video/$Number$.m4s" startNumber="2576505" timescale="15360"><SegmentTimeline><S d="15360" r="-1"/></SegmentTimeline></SegmentTemplate>
+   <Representation bandwidth="4798751" codecs="hev1.1.6.L123.90" frameRate="60" height="1080" id="1" mimeType="video/mp4" sar="1:1" startWithSAP="1" width="1920"/>
+  </AdaptationSet>
+ </Period>
+
+</MPD>
+
+------=_Part_2_1414934954.1490902887005
+Content-Type: application/mbms-user-service-description+xml
+Content-Location: usbd27.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<bundleDescriptionROUTE>
+   <userServiceDescription serviceId="27" globalServiceID="urn:1234:27" sTSIDUri="stsid27.xml">
+      <deliveryMethod>
+         <broadcastAppService>
+            <basePattern>video/</basePattern>
+         </broadcastAppService>
+      </deliveryMethod>
+   </userServiceDescription>
+</bundleDescriptionROUTE>

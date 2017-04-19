@@ -95,8 +95,15 @@ public class SampleChooserFragment extends Fragment {
           }
           loaderTask = new AdapterLoader(uris);
           loaderTask.execute();
+        if (activity instanceof MainActivity){
+            ((MainActivity)getActivity()).startLLSReceiver();
 
-      ((MainActivity)getActivity()).startLLSReceiver();
+        }else{
+            ((MainPhoneActivity)getActivity()).startLLSReceiver();
+
+        }
+
+
   }
   @Override
   public void onStop(){
@@ -220,14 +227,19 @@ public class SampleChooserFragment extends Fragment {
             public void run() {
                 onSampleSelected(groups.get(0).samples.get(0), 0);
             }
-        },5000);
+        },8000);
 
 
     }
 
     private void onSampleSelected(Sample sample, int childPosition) {
 //        ((MainActivity)activity).stopLLSReceiver();
-        ((MainActivity) activity).ExoPlayerStarted=true;
+        if (activity instanceof MainActivity) {
+            ((MainActivity) activity).ExoPlayerStarted = true;
+        }else{
+            ((MainPhoneActivity) activity).ExoPlayerStarted = true;
+
+        }
         ATSC3.dataSourceIndex=childPosition;
         activity.startActivity(sample.buildIntent(context));
     }

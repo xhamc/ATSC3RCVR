@@ -33,6 +33,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -84,11 +85,8 @@ import com.sony.tv.app.atsc3receiver1_0.app.AdCategory;
 import com.sony.tv.app.atsc3receiver1_0.app.AdContent;
 import com.sony.tv.app.atsc3receiver1_0.app.AdsListAdapter;
 import com.sony.tv.app.atsc3receiver1_0.app.NewAddDialogFragment;
-import com.sony.tv.app.atsc3receiver1_0.app.events.OnNewAdInsertedEvent;
 
 import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 import java.net.CookieHandler;
 import java.net.CookieManager;
@@ -97,6 +95,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -166,8 +166,8 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
   private UsbManager usbManager;
   private PendingIntent mPermissionIntent;
 
-
-
+  Timer timerForKey=new Timer();
+  TimerTask timerTask;
 
   // Activity lifecycle
 
@@ -212,8 +212,14 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
     simpleExoPlayerView = (SimpleExoPlayerView) findViewById(R.id.player_view);
     simpleExoPlayerView.setControllerVisibilityListener(this);
     simpleExoPlayerView.requestFocus();
-    simpleExoPlayerView.setUseController(false);
-
+    timerForKey=new Timer();
+    timerTask=new TimerTask() {
+      @Override
+      public void run() {
+        new DispatchKey(167);
+      }
+    };
+    timerForKey.schedule(timerTask,5*60*1000);
   }
 
 
@@ -231,7 +237,7 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
   @Override
   public void onStart() {
     super.onStart();
-    EventBus.getDefault().register(this);
+//    EventBus.getDefault().register(this);
     if (Util.SDK_INT > 23) {
       initializePlayer();
     }
@@ -278,7 +284,7 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
   @Override
   public void onStop() {
     super.onStop();
-    EventBus.getDefault().unregister(this);
+//    EventBus.getDefault().unregister(this);
     if (Util.SDK_INT > 23) {
       releasePlayer();
     }
@@ -307,12 +313,19 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
   public boolean dispatchKeyEvent(KeyEvent event) {
 
     Log.d("KEY","Key Pressed: "+event.getKeyCode());
-    boolean channelChange=false;
-    switch (event.getKeyCode()){
+    Timer t=new Timer();
+
+    switch (event.getKeyCode()) {
+      case 7:
+        showAdSelectorLayout();
+        break;
+      case 15:
+        closeAdSelectorLayout();
+        break;
       case 19:
         //Up button clicked
         showPlayControllerLayout();
- //       break;
+               break;
       case 20:
         //Down button clicked
 //        simpleExoPlayerView.setUseController(false);
@@ -320,35 +333,82 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
         break;
       case 21:
         //Left button clicked
-    //    showDebugLayout();
+        //    showDebugLayout();
         break;
       case 22:
         //Right arrow clicked
-     //   showInfoLayout();
+        //   showInfoLayout();
         break;
       case 166:
-        channelChange=ATSC3.channelUp(this);
-        break;
+        ATSC3.channelUp(this);
+      timerTask=new TimerTask() {
+          @Override
+          public void run() {
+          new DispatchKey(167);
+          }
+      };
+
+      timerForKey.schedule(timerTask,5*60*1000);
+        return true;
       case 167:
-        channelChange=ATSC3.channelDown(this);
-        break;
-      case 7:
-        //show Ad Switcher
-        showAdSelectorLayout();
-        break;
-      case 15:
-        //Close Add Switcher
-        closeAdSelectorLayout();
-        break;
+        ATSC3.channelDown(this);
+      timerTask=new TimerTask() {
+          @Override
+          public void run() {
+          new DispatchKey(166);
+          }
+      };
+      timerForKey.schedule(timerTask,5*60*1000);
+        return true;
 
     }
-
-
     // Show the controls on any key event.
-
+    simpleExoPlayerView.showController();
     // If the event was not handled then see if the player view can handle it as a media key event.
     return super.dispatchKeyEvent(event) || simpleExoPlayerView.dispatchMediaKeyEvent(event);
   }
+
+  private class DispatchKey implements Runnable{
+    private final int key;
+    public DispatchKey(int key){
+      this.key=key;
+      runOnUiThread(this);
+    }
+    public void run(){
+      KeyEvent keyEvent=new KeyEvent(KeyEvent.ACTION_DOWN,key);
+      dispatchKeyEvent(keyEvent);
+    }
+  }
+
+  float downXValue;
+  @Override
+  public boolean dispatchTouchEvent(MotionEvent ev) {
+    switch (ev.getAction()){
+      case MotionEvent.ACTION_DOWN:
+        downXValue=ev.getX();
+
+        break;
+      case MotionEvent.ACTION_UP:
+        if (ev.getX()-downXValue>200){
+          ATSC3.channelUp(this);
+
+
+        }else if(ev.getX()-downXValue<-200){
+          ATSC3.channelDown(this);
+
+        }else{
+          if (ev.getX()>simpleExoPlayerView.getWidth()/3 && ev.getX()<simpleExoPlayerView.getWidth()*2/3){
+            showAdSelectorLayout();
+          }else{
+            closeAdSelectorLayout();
+          }
+        }
+        break;
+    }
+
+    return super.dispatchTouchEvent(ev);
+  }
+
 
   private void closeAdSelectorLayout() {
     simpleExoPlayerView.setUseController(false);
@@ -381,7 +441,7 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
       Log.d(TAG, "Size: " + count);
     }
     if (categoryList != null && categoryList.size() > 0){
-        showEmptyText(false);
+      showEmptyText(false);
       adRecyclerView.setHasFixedSize(true);
       adRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
       adsListAdapter = new AdsListAdapter(categoryList, realm);
@@ -417,11 +477,28 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
 
   }
 
-  @Subscribe(threadMode = ThreadMode.MAIN)
-  public void onNewAddInserted(OnNewAdInsertedEvent event) {
-    showAdSelectorLayout();
+//  @Subscribe(threadMode = ThreadMode.MAIN)
+//  public void onNewAddInserted(OnNewAdInsertedEvent event) {
+//    showAdSelectorLayout();
+//
+//  };
 
-  };
+//
+//    Log.d("KEY","Key Pressed: "+event.getKeyCode());
+//    boolean channelChange=false;
+//    if (event.getKeyCode()==166){
+//      channelChange=ATSC3.channelUp(this);
+//    }else if(event.getKeyCode()==167){
+//      channelChange=ATSC3.channelDown(this);
+//    }
+//    if (channelChange){
+//
+//    }
+//    // Show the controls on any key event.
+//    simpleExoPlayerView.showController();
+//    // If the event was not handled then see if the player view can handle it as a media key event.
+//    return super.dispatchKeyEvent(event) || simpleExoPlayerView.dispatchMediaKeyEvent(event);
+//  }
 
   // OnClickListener methods
 

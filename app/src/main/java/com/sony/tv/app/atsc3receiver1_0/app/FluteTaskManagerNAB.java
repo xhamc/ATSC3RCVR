@@ -33,7 +33,7 @@ public class FluteTaskManagerNAB implements FluteTaskManagerBase  {
     private byte[] bytes;
     private static int MAX_SOCKET_TIMEOUT=0;
     private FluteReceiver sInstance=FluteReceiver.getInstance();
-    private CallBackInterface callBackInterface;
+    public CallBackInterface callBackInterface;
 
     private boolean manifestFound=false;
     private boolean usbdFound=false;
@@ -51,7 +51,7 @@ public class FluteTaskManagerNAB implements FluteTaskManagerBase  {
         this.callBackInterface=callBackInterface;
         stopRequest=false;
         this.signalingDataSpec=signalingDataSpec;
-        fileManager=new FluteFileManagerNAB(signalingDataSpec);
+        fileManager=new FluteFileManagerNAB(signalingDataSpec,this);
         new Thread(new RunUpdonThread(signalingDataSpec)).start();
     }
 
@@ -255,9 +255,9 @@ public class FluteTaskManagerNAB implements FluteTaskManagerBase  {
         return this.fileManager;
     }
 
-    public boolean isManifestFound(){ return manifestFound;}
-    public boolean isUsbdFound(){ return usbdFound;}
-    public boolean isSTSIDFound(){ return stsidFound;}
+    public boolean isManifestFound(){ return this.fileManager.manifestFound;}
+    public boolean isUsbdFound(){ return this.fileManager.usbdFound;}
+    public boolean isSTSIDFound(){ return this.fileManager.stsidFound;}
     public boolean isFirst(){ return first;}
     public int index(){return index;}
 

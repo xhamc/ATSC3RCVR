@@ -22,6 +22,9 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.locks.ReentrantLock;
 
+
+import static com.google.android.exoplayer2.util.Util.parseXsDuration;
+
 /**
  * Created by xhamc on 4/2/17.
  */
@@ -29,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FluteFileManagerNAB implements FluteFileManagerBase {
 
 
-    private static final long AVAILABILITY_TIME_OFFSET=2500;                    //Offset from time the content is received in buffer to time reported to player
+    private static final long AVAILABILITY_TIME_OFFSET=4500;                    //Offset from time the content is received in buffer to time reported to player
     private static final String MIN_BUFFER_TIME="PT2S";                         //Used by player to set lower buffer threshold
     private static final String TIME_SHIFT_BUFFER_OFFSET="PT3S";
     private static final String TIME_SHIFT_BUFFER_DEPTH="PT3S";                 //Used by player to set the depth of the buffer
@@ -83,13 +86,23 @@ private byte[] signalingStorage;                                                
 
     private SLS sls=new SLS();
 
+    public boolean manifestFound=false;
+    public boolean stsidFound=false;
+    public boolean usbdFound=false;
+    private FluteTaskManagerNAB fluteTaskManagerNAB;
+
     public FluteFileManagerNAB(DataSpec dataSpec){
         sInstance=this;
         baseDataSpec=dataSpec;
         reset();
     }
 
-
+    public FluteFileManagerNAB(DataSpec dataSpec, FluteTaskManagerNAB fluteTaskManagerNAB){
+        sInstance=this;
+        baseDataSpec=dataSpec;
+        this.fluteTaskManagerNAB=fluteTaskManagerNAB;
+        reset();
+    }
     /**
      * Initialize the arrays and hashmaps
      */
@@ -384,7 +397,13 @@ private byte[] signalingStorage;                                                
                             for (int i=0; i<sls.stsidParser.getLSSize(); i++) {
                                 mapGetBufferNumberFromTSI.put(sls.stsidParser.getTSI(i), i+1); //TODO: Use bw to determine video if there is both audio and video
                                 mapGetTSIFromBufferNumber.put(i+1, sls.stsidParser.getTSI(i));
+//                                Log.d("DebugTime", "window for live: write offset from period zero secs: " + (double) (l.time - periodStart-availabilityStartTime) / 1000.0 +
+//                                        " fileName: sls.xml");
                             }
+                        }else {
+                            if (!fileName.endsWith("2.m4s"))
+                            Log.d("DebugTime".concat(baseDataSpec.uri.getHost()), "window for live: write offset from period zero secs: " + (double) (l.time - periodStart-availabilityStartTime) / 1000.0 +
+                                    " fileName: "+fileName);
                         }
 
 
@@ -430,6 +449,8 @@ private byte[] signalingStorage;                                                
             String s=new String(mMPDbytes,0,mMPDbytes.length);
 //            Log.d(TAG,"MPD: "+ s);
             contentLength=mMPDbytes.length;
+//            Log.d("DebugTime","liveBufferTimeRead offset from period zero secs: "+(liveReadFromBufferTime-availabilityStartTime-periodStart)/1000.0 +
+//                    "  fileName: ManifestUpdate.mpd");
 
             return new FileBuffer(mMPDbytes, contentLength, 0);
 
@@ -443,7 +464,8 @@ private byte[] signalingStorage;                                                
             if (f != null) {
 
                 liveReadFromBufferTime=f.time;              //Exoplayer is reading from here so is closest time to live edge we know of
-                Log.d(TAG,"window for live: liveBufferTimeRead offset from avail in secs: "+(liveReadFromBufferTime-availabilityStartTime)/1000);
+                Log.d("DebugTime".concat(baseDataSpec.uri.getHost()),"liveBufferTimeRead offset from period zero secs: "+(liveReadFromBufferTime-availabilityStartTime-periodStart)/1000.0 +
+                        "  fileName: "+f.fileName);
                 index--;
                 return new FileBuffer(storage.get(index), f.contentLength, f.start);
             }else{
@@ -455,6 +477,8 @@ private byte[] signalingStorage;                                                
     }
 
 
+    long periodStart=0;
+
     /**
      * Manipulate the Manifest by replacing AST, changing buffering params and inserting ads
      * @param mpdData input data
@@ -465,10 +489,10 @@ private byte[] signalingStorage;                                                
         TimeZone timeZone = TimeZone.getTimeZone("UTC");
         Calendar c= Calendar.getInstance(timeZone);
         DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-
+        MPDParser mpdParser;
         if (first){
             long firstTimeOffset=0;
-            MPDParser mpdParser=new MPDParser(mpdData, mapFileLocationsVid, mapFileLocationsAud);
+            mpdParser=new MPDParser(mpdData, mapFileLocationsVid, mapFileLocationsAud);
             mpdParser.MPDParse();
 
             availabilityStartTimeOffset=AVAILABILITY_TIME_OFFSET;
@@ -501,7 +525,7 @@ private byte[] signalingStorage;                                                
         String availabilityStartTimeString= formatter.format(availabilityStartTime);
         Log.d(TAG, availabilityStartTimeString);
 
-        MPDParser mpdParser=new MPDParser(mpdHeader, mapFileLocationsVid, mapFileLocationsAud);
+        mpdParser=new MPDParser(mpdHeader, mapFileLocationsVid, mapFileLocationsAud);
         mpdParser.MPDParse();
         mpdParser.mpd.getAttributes().put("minBufferTime",MIN_BUFFER_TIME);
 //        mpdParser.mpd.getAttributes().put("timeShiftBufferOffset",TIME_SHIFT_BUFFER_OFFSET);
@@ -528,6 +552,7 @@ private byte[] signalingStorage;                                                
                     } else if(eventType == XmlPullParser.START_TAG) {
                         if (xpp.getName().equals("Period")){
                             for (int i=0; i<xpp.getAttributeCount(); i++){
+                                String start=xpp.getAttributeValue(null,"start");
                                 if (xpp.getAttributeName(i).startsWith("xlink")){
                                     int indexStart=0;
                                     int indexEnd=0;
@@ -536,17 +561,32 @@ private byte[] signalingStorage;                                                
                                         indexStart=mpdData.indexOf("<Period", indexEnd+9);
                                         indexEnd=mpdData.indexOf("</Period>", indexEnd+9);
                                     }
-                                    String start=xpp.getAttributeValue(null,"start");
                                     if (lastAdInsertion==null || !start.equals(lastAdStart)){
                                         lastAdStart=start;
                                         start="start=\"".concat(start).concat("\"");
                                         lastAdInsertion=Ads.getNextAd(false);
                                         lastAdInsertion.period=lastAdInsertion.period.replaceFirst( "start=['|\"][PTMHS\\.0-9]+['|\"]",start);
+
+                                        Log.d("DebugTime".concat(baseDataSpec.uri.getHost()),"Switch ad period position: ads now in period: "+periodNumber);
                                     }
-                                    mpdData=mpdData.substring(0,indexStart).concat(lastAdInsertion.period).concat(mpdData.substring(indexEnd+9,mpdData.length()));
+                                    if (periodNumber==0){
+                                        Log.d("DebugTime".concat(baseDataSpec.uri.getHost()),"Switch ad period position: ads now in period: "+periodNumber);
+                                    }
+
+                                    mpdData = mpdData.substring(0, indexStart).concat(lastAdInsertion.period).concat(mpdData.substring(indexEnd + 9, mpdData.length()));
+
                                     break;
+                                }else {
+                                    if (lastAdInsertion != null) {
+
+
+                                    }
+                                }
+                                if (periodNumber==0){
+                                    periodStart=parseXsDuration(start);
                                 }
                             }
+
                             periodNumber++;
 
                         }
@@ -619,12 +659,22 @@ private byte[] signalingStorage;                                                
             slsLocation=contentFileLocation;
             String sls=new String(storage,contentFileLocation.start,contentFileLocation.contentLength);
             if (extractManifest(sls)){
+                manifestFound=true;
+                fluteTaskManagerNAB.callBackInterface.callBackManifestFound(fluteTaskManagerNAB);
+
                 //TODO create a manifest file in buffer
             }
             if (extractUSBD(sls)){
+                usbdFound=true;
+                fluteTaskManagerNAB.callBackInterface.callBackUSBDFound(fluteTaskManagerNAB);
+
+
                 //TODO create a usbd file in buffer
             }
             if (extractSTSID(sls)){
+                stsidFound=true;
+                fluteTaskManagerNAB.callBackInterface.callBackSTSIDFound(fluteTaskManagerNAB);
+
 
             }
 

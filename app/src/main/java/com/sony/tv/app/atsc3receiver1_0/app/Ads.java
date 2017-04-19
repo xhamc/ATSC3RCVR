@@ -95,6 +95,7 @@ public class Ads {
             xpp.setInput(s);
             int eventType = xpp.getEventType();
             boolean titleTag=false;
+            boolean categoryTag=false;
             loop:while (eventType!=XmlPullParser.END_DOCUMENT) {
                 if(eventType == XmlPullParser.START_DOCUMENT) {
 
@@ -104,7 +105,11 @@ public class Ads {
                     }else{
                         titleTag=false;
                     }
-
+                    if (xpp.getName().equals("Category")){
+                        categoryTag=true;
+                    }else{
+                        categoryTag=false;
+                    }
                     if (xpp.getName().equals("Period")){
 
                         for (int i = 0; i < xpp.getAttributeCount(); i++) {
@@ -114,10 +119,10 @@ public class Ads {
                             if (xpp.getAttributeName(i).equals("duration")){
                                 duration=xpp.getAttributeValue(i);
                             }
-                            if (xpp.getAttributeName(i).equals("category")){
-                                category=xpp.getAttributeValue(i);
-                                Log.d(TAG, "Category: " + category);
-                            }
+//                            if (xpp.getAttributeName(i).equals("category")){
+//                                category=xpp.getAttributeValue(i);
+//                                Log.d(TAG, "Category: " + category);
+//                            }
 
                     }
                         break loop;
@@ -126,8 +131,12 @@ public class Ads {
                 } else if(eventType == XmlPullParser.TEXT) {
                     if (titleTag) {
                         title = xpp.getText();
+                        titleTag = false;
                     }
-                    titleTag = false;
+                    if (categoryTag) {
+                        category=xpp.getText();
+                        categoryTag=false;
+                    }
                 }
                 eventType = xpp.next();
             }
@@ -247,7 +256,7 @@ public class Ads {
 
         }else {
             adCount++;
-            if (adCount > enabledArrayAds.size()) {
+            if (adCount >= enabledArrayAds.size()) {
                 adCount = 0;
             }
             AdContent selectedAd = enabledArrayAds.get(adCount);

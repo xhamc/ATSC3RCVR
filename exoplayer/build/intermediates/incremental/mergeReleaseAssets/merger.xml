@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<merger version="3"><dataSet config="main"><source path="/Users/valokafor/AndroidStudioProjects/ATSC3RCVR/exoplayer/src/main/assets"/><source path="/Users/valokafor/AndroidStudioProjects/ATSC3RCVR/exoplayer/build/generated/assets/shaders/release"/></dataSet><dataSet config="release"><source path="/Users/valokafor/AndroidStudioProjects/ATSC3RCVR/exoplayer/src/release/assets"/></dataSet></merger>

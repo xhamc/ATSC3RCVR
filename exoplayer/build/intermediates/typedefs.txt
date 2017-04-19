@@ -1,5 +1,0 @@
-D com/google/android/exoplayer2/audio/SimpleDecoderAudioRenderer$ReinitializationState
-D com/google/android/exoplayer2/drm/DrmSession$State
-D com/google/android/exoplayer2/extractor/mp4/Mp4Extractor$State
-D com/google/android/exoplayer2/text/ttml/TtmlStyle$OptionalBoolean
-D com/google/android/exoplayer2/text/webvtt/WebvttCssStyle$OptionalBoolean

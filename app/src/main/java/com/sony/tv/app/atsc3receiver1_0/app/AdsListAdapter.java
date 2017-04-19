@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -120,7 +121,7 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
             adNameTextView = (TextView) itemView.findViewById(R.id.ad_name_textview);
             adUrlTextView = (TextView) itemView.findViewById(R.id.ad_url_textview);
             adEnableCheckbox = (CheckBox) itemView.findViewById(R.id.ad_enable_checkbox);
-
+            adEnableCheckbox.setEnabled(true);
             adEnableCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -146,6 +147,7 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
                     }
                 }
             });
+
 
 
         }

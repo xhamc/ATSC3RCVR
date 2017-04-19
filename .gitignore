@@ -8,3 +8,6 @@
 /captures
 .externalNativeBuild
 /app/src/main/assets/ADS
+/exoplayer/build
+/app/build/
+/testutils/build

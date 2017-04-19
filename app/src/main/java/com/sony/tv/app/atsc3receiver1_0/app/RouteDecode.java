@@ -2,6 +2,8 @@ package com.sony.tv.app.atsc3receiver1_0.app;
 
 import android.util.Log;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * Created by xhamc on 4/2/17.
  */
@@ -47,6 +49,8 @@ public class RouteDecode implements RouteDecodeBase {
     public String fileName() {return fileName;}
     public int contentLength(){return contentLength;}
     public int efdt_toi(){return efdt_toi;}
+
+    ReentrantLock lock=new ReentrantLock();
 
     public RouteDecode(byte[] data, int packetSize) {
         if (data.length < 0x20) return;

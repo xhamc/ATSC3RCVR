@@ -1,45 +1,23 @@
-/*
- * Copyright (C) 2014 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
 package com.sony.tv.app.atsc3receiver1_0;
 
-import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
+import android.app.Activity;
 import android.util.Log;
-import android.view.View;
 
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.sony.tv.app.atsc3receiver1_0.app.ATSC3;
-import com.sony.tv.app.atsc3receiver1_0.app.ATSC3.CallBackInterface;
 import com.sony.tv.app.atsc3receiver1_0.app.Ads;
 import com.sony.tv.app.atsc3receiver1_0.app.FluteReceiver;
 import com.sony.tv.app.atsc3receiver1_0.app.FluteTaskManagerBase;
 import com.sony.tv.app.atsc3receiver1_0.app.LLSReceiver;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
-/*
- * MainActivity class that loads MainFragment
- */
-public class MainActivity extends Activity {
+public class MainPhoneActivity extends Activity {
 
     SampleChooserFragment sampleChooserFragment;
     LLSReceiver mLLSReceiver;
@@ -53,7 +31,7 @@ public class MainActivity extends Activity {
     private static boolean first=true;
     private Ads ads;
 
-    CallBackInterface callBackInterface;
+    ATSC3.CallBackInterface callBackInterface;
 
     public static Activity activity;
 
@@ -109,7 +87,7 @@ public class MainActivity extends Activity {
 
 //        Ads.getAdByTitle("Better Call Saul").enabled=true;
 
-        callBackInterface=new CallBackInterface() {
+        callBackInterface=new ATSC3.CallBackInterface() {
             @Override
             public void callBackSLTFound() {
                 sltComplete=true;
@@ -210,7 +188,7 @@ public class MainActivity extends Activity {
 //        handler.postDelayed(new Runnable() {
 //            @Override
 //            public void run() {
-                initFragments();
+        initFragments();
 //                ATSC3.dataSourceIndex=0;
 //                Intent intent = new Intent(MainActivity.this, PlayerActivity.class);
 //                intent.setAction(PlayerActivity.ACTION_VIEW);
@@ -294,32 +272,37 @@ public class MainActivity extends Activity {
     public void startSignalingFluteSession(int type){
 //            int i=0;
 
-            for (int i=0; i<mLLSReceiver.slt.mSLTData.mServices.size(); i++){
+        for (int i=0; i<mLLSReceiver.slt.mSLTData.mServices.size(); i++){
 
-                String host=mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationIpAddress;
-                String uriString="udp://".concat(host).concat(":").concat(
-                mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationUdpPort);
-                Log.d(TAG,"Opening: "+uriString);
-                Uri uri=Uri.parse(uriString);
-                DataSpec d=new DataSpec(uri);
-                mFluteReceiver.start(d, null, i, type, callBackInterface);
-        }
-    }
-
-
-    public void startCompleteFluteSession(int type, FluteTaskManagerBase fluteTaskManager){
-
-            int i=fluteTaskManager.index();
             String host=mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationIpAddress;
             String uriString="udp://".concat(host).concat(":").concat(
                     mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationUdpPort);
             Log.d(TAG,"Opening: "+uriString);
             Uri uri=Uri.parse(uriString);
             DataSpec d=new DataSpec(uri);
-            Log.d(TAG,"Opening: "+uriString);
+            mFluteReceiver.start(d, null, i, type, callBackInterface);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public void startCompleteFluteSession(int type, FluteTaskManagerBase fluteTaskManager){
+
+        int i=fluteTaskManager.index();
+        String host=mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationIpAddress;
+        String uriString="udp://".concat(host).concat(":").concat(
+                mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationUdpPort);
+        Log.d(TAG,"Opening: "+uriString);
+        Uri uri=Uri.parse(uriString);
+        DataSpec d=new DataSpec(uri);
+        Log.d(TAG,"Opening: "+uriString);
 //        DataSpec d2=new DataSpec(Uri.parse(uriString.replace("3000","3001")));
 //            mFluteReceiver.start(d, d2, i, type, callBackInterface);
-            mFluteReceiver.start(d, d, i, type, callBackInterface);
+        mFluteReceiver.start(d, d, i, type, callBackInterface);
 
     }
 
