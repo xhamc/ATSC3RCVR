@@ -1,0 +1,9 @@
+<changelist name="Do_not_commit" date="1492035656020" recycled="false">
+  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Do_not_commit/shelved.patch" />
+  <option name="DESCRIPTION" value="Do not commit" />
+  <binary>
+    <option name="BEFORE_PATH" value="exoplayer/build/outputs/aar/exoplayer-release.aar" />
+    <option name="AFTER_PATH" value="exoplayer/build/outputs/aar/exoplayer-release.aar" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Do_not_commit/exoplayer-release.aar" />
+  </binary>
+</changelist>
