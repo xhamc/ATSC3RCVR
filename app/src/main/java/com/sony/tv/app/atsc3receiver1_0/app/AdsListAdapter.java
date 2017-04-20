@@ -1,11 +1,9 @@
 package com.sony.tv.app.atsc3receiver1_0.app;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -13,25 +11,27 @@ import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.sony.tv.app.atsc3receiver1_0.R;
+import com.sony.tv.app.atsc3receiver1_0.app.events.OnAdCategoryCheckedListener;
 
 import java.util.List;
-
-import io.realm.Realm;
 
 /**
  * Created by valokafor on 4/12/17.
  */
 
 public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHolder>{
-    private int selectedPosition = -1;
-    private final List<AdCategory> adsList;
-    private final Realm realm;
 
-    public AdsListAdapter(List<AdCategory> adsList, Realm realm) {
+    private List<AdCategory> adsList;
+    private OnAdCategoryCheckedListener listener;
+
+
+    public AdsListAdapter(List<AdCategory> adsList) {
         this.adsList = adsList;
-        this.realm = realm;
     }
 
+    public void setListener(OnAdCategoryCheckedListener listener) {
+        this.listener = listener;
+    }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -40,35 +40,21 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
         View itemView = inflater.inflate(R.layout.custom_row_layout_ads, parent, false);
         return new ViewHolder(itemView);
     }
-
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
         final AdCategory selectedCategory = adsList.get(position);
-        if (selectedPosition == position){
-            holder.itemView.setBackgroundColor(Color.parseColor("#000000"));
-        }else {
-            holder.itemView.setBackgroundColor(Color.parseColor("#ffffffff"));
-        }
-
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedPosition = position;
-                notifyDataSetChanged();
-            }
-        });
+        holder.adEnableCheckbox.setOnCheckedChangeListener(null);
 
         if (selectedCategory != null && !TextUtils.isEmpty(selectedCategory.getName())) {
             holder.adNameTextView.setText(selectedCategory.getName());
         }
 
+
         if (selectedCategory != null && selectedCategory.getAds().size() > 0) {
-            if (selectedCategory.getAds().get(0).enabled == true){
-                holder.adEnableCheckbox.setChecked(true);
-            } else {
-                holder.adEnableCheckbox.setChecked(false);
-            }
+            boolean isChecked = selectedCategory.isChecked();
+            holder.adEnableCheckbox.setChecked(isChecked);
         }
+
 
         if (selectedCategory.getAds() != null && selectedCategory.getAds().size() > 0){
             String listOfAdTitle = "";
@@ -91,11 +77,6 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
 
 
         }
-
-
-
-
-
     }
 
     @Override
@@ -105,6 +86,12 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
         }else {
             return 0;
         }
+    }
+
+    public void updateAdList(List<AdCategory> adCategoryList){
+        this.adsList = adCategoryList;
+        notifyDataSetChanged();
+
     }
 
 
@@ -121,36 +108,24 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
             adNameTextView = (TextView) itemView.findViewById(R.id.ad_name_textview);
             adUrlTextView = (TextView) itemView.findViewById(R.id.ad_url_textview);
             adEnableCheckbox = (CheckBox) itemView.findViewById(R.id.ad_enable_checkbox);
-            adEnableCheckbox.setEnabled(true);
+            //this.setIsRecyclable(false);
+
             adEnableCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    final AdCategory category = adsList.get(getLayoutPosition());
+                    int position = getLayoutPosition();
+                    AdCategory selectedCategory = adsList.get(position);
                     if (isChecked){
-                        realm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                for (AdContent selectedAd: category.getAds())
-                                    selectedAd.enabled = true;
-
-                            }
-                        });
+                        listener.onAdCategoryChecked(selectedCategory.getId());
                     }else {
-                        realm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                for (AdContent selectedAd: category.getAds())
-                                    selectedAd.enabled = false;
-                            }
-                        });
-
+                        listener.onAdCategoryUnChecked(selectedCategory.getId());
                     }
+
                 }
             });
-
-
-
         }
+
+
     }
 
 

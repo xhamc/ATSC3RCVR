@@ -17,13 +17,10 @@ package com.sony.tv.app.atsc3receiver1_0;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
-import android.view.View;
 
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.sony.tv.app.atsc3receiver1_0.app.ATSC3;
@@ -34,7 +31,6 @@ import com.sony.tv.app.atsc3receiver1_0.app.FluteTaskManagerBase;
 import com.sony.tv.app.atsc3receiver1_0.app.LLSReceiver;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 /*
  * MainActivity class that loads MainFragment

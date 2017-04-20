@@ -85,19 +85,19 @@ import com.sony.tv.app.atsc3receiver1_0.app.AdCategory;
 import com.sony.tv.app.atsc3receiver1_0.app.AdContent;
 import com.sony.tv.app.atsc3receiver1_0.app.AdsListAdapter;
 import com.sony.tv.app.atsc3receiver1_0.app.NewAddDialogFragment;
-
-import org.greenrobot.eventbus.EventBus;
+import com.sony.tv.app.atsc3receiver1_0.app.events.OnAdCategoryCheckedListener;
 
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -220,6 +220,14 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
       }
     };
     timerForKey.schedule(timerTask,5*60*1000);
+
+    getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
   }
 
 
@@ -347,12 +355,15 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
           new DispatchKey(167);
           }
       };
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(new DispatchKey(166));
 
       timerForKey.schedule(timerTask,5*60*1000);
         return true;
+
       case 167:
         ATSC3.channelDown(this);
-      timerTask=new TimerTask() {
+        timerTask=new TimerTask() {
           @Override
           public void run() {
           new DispatchKey(166);
@@ -379,6 +390,8 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
       dispatchKeyEvent(keyEvent);
     }
   }
+
+
 
   float downXValue;
   @Override
@@ -435,17 +448,49 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
 
 
     RealmResults<AdCategory> categoryList = realm.where(AdCategory.class).findAll();
-    if (categoryList != null){
-      int count = categoryList.size();
-      List<AdContent> ads = categoryList.get(0).getAds();
-      Log.d(TAG, "Size: " + count);
-    }
+
     if (categoryList != null && categoryList.size() > 0){
       showEmptyText(false);
       adRecyclerView.setHasFixedSize(true);
       adRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-      adsListAdapter = new AdsListAdapter(categoryList, realm);
+      adsListAdapter = new AdsListAdapter(categoryList);
       adRecyclerView.setAdapter(adsListAdapter);
+
+      adsListAdapter.setListener(new OnAdCategoryCheckedListener() {
+        @Override
+        public void onAdCategoryChecked(final long categoryId) {
+          realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm backgroundRealm) {
+              AdCategory selectedCategory = backgroundRealm.where(AdCategory.class).equalTo("id", categoryId).findFirst();
+              if (selectedCategory != null){
+                selectedCategory.setChecked(true);
+                for (AdContent adContent: selectedCategory.getAds()){
+                     adContent.enabled = true;
+                }
+              }
+
+            }
+          });
+        }
+
+        @Override
+        public void onAdCategoryUnChecked(final long categoryId) {
+          realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm backgroundRealm) {
+              AdCategory selectedCategory = backgroundRealm.where(AdCategory.class).equalTo("id", categoryId).findFirst();
+              if (selectedCategory != null){
+                selectedCategory.setChecked(false);
+                for (AdContent adContent: selectedCategory.getAds()){
+                  adContent.enabled = false;
+                }
+              }
+            }
+          });
+
+        }
+      });
     }else {
       showEmptyText(true);
     }

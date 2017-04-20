@@ -12,6 +12,7 @@ public class AdCategory extends RealmObject{
     @PrimaryKey
     private long id;
     private String name;
+    private boolean checked;
     private RealmList<AdContent> ads;
 
     public long getId() {
@@ -36,5 +37,14 @@ public class AdCategory extends RealmObject{
 
     public void setAds(RealmList<AdContent> ads) {
         this.ads = ads;
+    }
+
+
+    public boolean isChecked() {
+        return checked;
+    }
+
+    public void setChecked(boolean checked) {
+        this.checked = checked;
     }
 }
