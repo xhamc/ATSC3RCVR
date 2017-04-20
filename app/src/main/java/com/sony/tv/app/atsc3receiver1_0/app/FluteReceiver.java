@@ -153,7 +153,7 @@ public class FluteReceiver  {
     public void stop(){
         if (null!=mFluteTaskManager){
             for (int i=0; i<mFluteTaskManager.length; i++){
-                mFluteTaskManager[0].stop();
+                mFluteTaskManager[i].stop();
 
             }
         }

@@ -23,7 +23,7 @@ public class FluteTaskManager implements FluteTaskManagerBase{
 
     private FluteTaskManager mFluteTaskManager;
     public String error;
-    Boolean stopRequest;
+    boolean stopRequest;
     public DataSpec signalingDataSpec;
     public DataSpec avDataSpec;
 //    public FluteFileManager fileManager=FluteFileManager.getInstance();

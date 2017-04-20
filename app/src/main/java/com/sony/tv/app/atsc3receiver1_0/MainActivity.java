@@ -68,6 +68,7 @@ public class MainActivity extends Activity {
         ExoPlayerStarted=false;
         fragmentsInitialized=false;
         activity=this;
+        first=true;
 
         Intent intent=getIntent();
         if (null!=intent){
@@ -108,35 +109,38 @@ public class MainActivity extends Activity {
         callBackInterface=new CallBackInterface() {
             @Override
             public void callBackSLTFound() {
-                sltComplete=true;
-                if (stComplete && firstLLS ) {
-                    int type;
-                    if (LLSReceiver.getInstance().systemTime.getPtpPrepend()!=0){
-                        type=ATSC3.QUALCOMM;
-                    }else{
-                        type=ATSC3.NAB;
-                    }
-                    startSignalingFluteSession(type);
-                    firstLLS =false;
+                if (isFirst()) {
+                    sltComplete = true;
+                    if (stComplete && firstLLS) {
+                        int type;
+                        if (LLSReceiver.getInstance().systemTime.getPtpPrepend() != 0) {
+                            type = ATSC3.QUALCOMM;
+                        } else {
+                            type = ATSC3.NAB;
+                        }
+                        startSignalingFluteSession(type);
+                        firstLLS = false;
 //                    if (!fragmentsInitialized)
 //                        initFragments();
+                    }
                 }
             }
 
             @Override
             public void callBackSTFound() {
-
-                if (sltComplete && firstLLS ) {
-                    int type;
-                    if (LLSReceiver.getInstance().systemTime.getPtpPrepend()!=0){
-                        type=ATSC3.QUALCOMM;
-                    }else{
-                        type=ATSC3.NAB;
-                    }
-                    startSignalingFluteSession(type);
-                    firstLLS  = false;
+                if (isFirst()) {
+                    if (sltComplete && firstLLS) {
+                        int type;
+                        if (LLSReceiver.getInstance().systemTime.getPtpPrepend() != 0) {
+                            type = ATSC3.QUALCOMM;
+                        } else {
+                            type = ATSC3.NAB;
+                        }
+                        startSignalingFluteSession(type);
+                        firstLLS = false;
 //                    if (!fragmentsInitialized)
 //                        initFragments();
+                    }
                 }
             }
 
@@ -177,18 +181,18 @@ public class MainActivity extends Activity {
 
             @Override
             public void callBackFluteStopped(FluteTaskManagerBase fluteTaskManager){
-                if (isFirst() &&
-                        fluteTaskManager.isUsbdFound() &&
-                        fluteTaskManager.isSTSIDFound() &&
-                        fluteTaskManager.isManifestFound()){
-                    int type;
-                    if (LLSReceiver.getInstance().systemTime.getPtpPrepend()!=0){
-                        type=ATSC3.QUALCOMM;
-                    }else{
-                        type=ATSC3.NAB;
-                    }
-                    startCompleteFluteSession(type, fluteTaskManager);
-                }
+//                if (isFirst() &&
+//                        fluteTaskManager.isUsbdFound() &&
+//                        fluteTaskManager.isSTSIDFound() &&
+//                        fluteTaskManager.isManifestFound()){
+//                    int type;
+//                    if (LLSReceiver.getInstance().systemTime.getPtpPrepend()!=0){
+//                        type=ATSC3.QUALCOMM;
+//                    }else{
+//                        type=ATSC3.NAB;
+//                    }
+//                    startCompleteFluteSession(type, fluteTaskManager);
+//                }
             }
         };
 
