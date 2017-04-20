@@ -223,7 +223,14 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
         new DispatchKey(167);
       }
     };
-    timerForKey.schedule(timerTask,5*60*1000);
+    timerTaskUp=new TimerTask() {
+      @Override
+      public void run() {
+        new DispatchKey(166);
+      }
+    };
+    timerForChannelChange.schedule(timerTaskDown,10*60*1000);
+
   }
 
 
@@ -354,24 +361,31 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
         break;
       case 166:
         ATSC3.channelUp(this);
-      timerTask=new TimerTask() {
+
+        timerTaskDown.cancel();
+        if (!stopped) {
+          timerTaskDown = new TimerTask() {
           @Override
           public void run() {
           new DispatchKey(167);
           }
       };
-
-      timerForKey.schedule(timerTask,5*60*1000);
+          timerForChannelChange.schedule(timerTaskDown, 10*60*1000);
+        }
         return true;
       case 167:
         ATSC3.channelDown(this);
-      timerTask=new TimerTask() {
+
+        timerTaskUp.cancel();
+        if (!stopped) {
+          timerTaskUp = new TimerTask() {
           @Override
           public void run() {
           new DispatchKey(166);
           }
       };
-      timerForKey.schedule(timerTask,5*60*1000);
+          timerForChannelChange.schedule(timerTaskUp, 10*60*1000);
+        }
         return true;
 
     }
