@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.SystemClock;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -407,7 +408,7 @@ public class PlaybackControlView extends FrameLayout {
       requestPlayPauseFocus();
     }
     // Call hideAfterTimeout even if already visible to reset the timeout.
-    hideAfterTimeout();
+//    hideAfterTimeout();
   }
 
   /**
@@ -514,6 +515,8 @@ public class PlaybackControlView extends FrameLayout {
       }
       long bufferedPosition = player == null ? 0 : player.getBufferedPosition();
       progressBar.setSecondaryProgress(progressBarValue(bufferedPosition));
+      Log.d("PlayBackPosition","CurrentPosition: "+position+"  BufferedPosition: "+bufferedPosition);
+
       // Remove scheduled updates.
     }
     removeCallbacks(updateProgressAction);

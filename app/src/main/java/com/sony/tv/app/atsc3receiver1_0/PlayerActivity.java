@@ -169,6 +169,7 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
   private PendingIntent mPermissionIntent;
 
   private boolean stopped=false;
+  private static boolean timerChannelChangeEnabled=false;
 
   Timer timerForChannelChange;
   TimerTask timerTaskUp,timerTaskDown;
@@ -182,7 +183,7 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
     clearResumePosition();
     mediaDataSourceFactory = buildDataSourceFactory(true);
     mainHandler = new Handler();
-    realm = Realm.getDefaultInstance();
+//    realm = Realm.getDefaultInstance();
     if (CookieHandler.getDefault() != DEFAULT_COOKIE_MANAGER) {
       CookieHandler.setDefault(DEFAULT_COOKIE_MANAGER);
     }
@@ -216,20 +217,22 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
     simpleExoPlayerView = (SimpleExoPlayerView) findViewById(R.id.player_view);
     simpleExoPlayerView.setControllerVisibilityListener(this);
     simpleExoPlayerView.requestFocus();
-    timerForChannelChange=new Timer();
-    timerTaskDown=new TimerTask() {
-      @Override
-      public void run() {
-        new DispatchKey(167);
-      }
-    };
-    timerTaskUp=new TimerTask() {
-      @Override
-      public void run() {
-        new DispatchKey(166);
-      }
-    };
-    timerForChannelChange.schedule(timerTaskDown,5*60*1000);
+    if (timerChannelChangeEnabled) {
+      timerForChannelChange = new Timer();
+      timerTaskDown = new TimerTask() {
+        @Override
+        public void run() {
+          new DispatchKey(167);
+        }
+      };
+      timerTaskUp = new TimerTask() {
+        @Override
+        public void run() {
+          new DispatchKey(166);
+        }
+      };
+      timerForChannelChange.schedule(timerTaskDown, 5 * 60 * 1000);
+    }
     getWindow().getDecorView().setSystemUiVisibility(
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -307,12 +310,15 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
     if (Util.SDK_INT > 23) {
       releasePlayer();
     }
-    timerTaskDown.cancel();
-    timerTaskUp.cancel();
-    timerForChannelChange.cancel();
-    timerForChannelChange=null;
-    timerTaskDown=null;
-    timerTaskUp=null;
+    if (timerChannelChangeEnabled) {
+
+      timerTaskDown.cancel();
+      timerTaskUp.cancel();
+      timerForChannelChange.cancel();
+      timerForChannelChange = null;
+      timerTaskDown = null;
+      timerTaskUp = null;
+    }
     stopped=true;
   }
 
@@ -368,30 +374,34 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
         break;
       case 166:
         ATSC3.channelUp(this);
+        if (timerChannelChangeEnabled) {
 
-        timerTaskDown.cancel();
-        if (!stopped) {
-          timerTaskDown = new TimerTask() {
-            @Override
-            public void run() {
-              new DispatchKey(167);
-            }
-          };
-          timerForChannelChange.schedule(timerTaskDown, 5*60*1000);
+          timerTaskDown.cancel();
+          if (!stopped) {
+            timerTaskDown = new TimerTask() {
+              @Override
+              public void run() {
+                new DispatchKey(167);
+              }
+            };
+            timerForChannelChange.schedule(timerTaskDown, 5 * 60 * 1000);
+          }
         }
         return true;
       case 167:
         ATSC3.channelDown(this);
+        if (timerChannelChangeEnabled) {
 
-        timerTaskUp.cancel();
-        if (!stopped) {
-          timerTaskUp = new TimerTask() {
-            @Override
-            public void run() {
-              new DispatchKey(166);
-            }
-          };
-          timerForChannelChange.schedule(timerTaskUp, 5*60*1000);
+          timerTaskUp.cancel();
+          if (!stopped) {
+            timerTaskUp = new TimerTask() {
+              @Override
+              public void run() {
+                new DispatchKey(166);
+              }
+            };
+            timerForChannelChange.schedule(timerTaskUp, 5 * 60 * 1000);
+          }
         }
         return true;
 
@@ -467,18 +477,12 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
     adSelectLayout.setVisibility(View.VISIBLE);
     addNewAdButton.requestFocus();
 
-
-    RealmResults<AdCategory> categoryList = realm.where(AdCategory.class).findAll();
-    if (categoryList != null){
-      int count = categoryList.size();
-      List<AdContent> ads = categoryList.get(0).getAds();
-      Log.d(TAG, "Size: " + count);
-    }
-    if (categoryList != null && categoryList.size() > 0){
+    if (AdCategory.adCategoryNames != null && AdCategory.adCategoryNames.size() > 0){
       showEmptyText(false);
       adRecyclerView.setHasFixedSize(true);
       adRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-      adsListAdapter = new AdsListAdapter(categoryList, realm);
+      adsListAdapter = new AdsListAdapter();
+
       adRecyclerView.setAdapter(adsListAdapter);
     }else {
       showEmptyText(true);

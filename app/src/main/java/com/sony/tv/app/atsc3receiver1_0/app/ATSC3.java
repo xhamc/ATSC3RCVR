@@ -50,7 +50,7 @@ public class ATSC3 extends Application {
 
     private static Context context;
 
-    public static AtomicLong adPrimaryKey,catPrimaryKey;
+//    public static AtomicLong adPrimaryKey,catPrimaryKey;
 
     public interface CallBackInterface{
         void callBackSLTFound();
@@ -78,47 +78,47 @@ public class ATSC3 extends Application {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        initRealm();
+//        initRealm();
     }
 
-    private void initRealm() {
-        Realm.init(this);
-        RealmConfiguration configuration  = new RealmConfiguration.Builder()
-                .name("atsc3demo")
-                .schemaVersion(1)
-                .deleteRealmIfMigrationNeeded()
-                .build();
-        Realm.setDefaultConfiguration(configuration);
-        Realm realm = Realm.getInstance(configuration);
-
-        try {
-            adPrimaryKey = new AtomicLong(realm.where(AdContent.class).max("id").longValue() + 1);
-        } catch (Exception e) {
-            realm.beginTransaction();
-            AdContent task = realm.createObject(AdContent.class, 0);
-            adPrimaryKey = new AtomicLong(realm.where(AdContent.class).max("id").longValue() + 1);
-            RealmResults<AdContent> results = realm.where(AdContent.class).equalTo("id", 0).findAll();
-            results.deleteAllFromRealm();
-            realm.commitTransaction();
-        }
-
-        try {
-            catPrimaryKey = new AtomicLong(realm.where(AdCategory.class).max("id").longValue() + 1);
-        } catch (Exception e) {
-            realm.beginTransaction();
-            AdCategory category = realm.createObject(AdCategory.class, 0);
-            catPrimaryKey = new AtomicLong(realm.where(AdCategory.class).max("id").longValue() + 1);
-            RealmResults<AdCategory> results = realm.where(AdCategory.class).equalTo("id", 0).findAll();
-            results.deleteAllFromRealm();
-            realm.commitTransaction();
-
-
-        }finally {
-            realm.close();
-        }
-
-
-    }
+//    private void initRealm() {
+//        Realm.init(this);
+//        RealmConfiguration configuration  = new RealmConfiguration.Builder()
+//                .name("atsc3demo")
+//                .schemaVersion(1)
+//                .deleteRealmIfMigrationNeeded()
+//                .build();
+//        Realm.setDefaultConfiguration(configuration);
+//        Realm realm = Realm.getInstance(configuration);
+//
+//        try {
+//            adPrimaryKey = new AtomicLong(realm.where(AdContent.class).max("id").longValue() + 1);
+//        } catch (Exception e) {
+//            realm.beginTransaction();
+//            AdContent task = realm.createObject(AdContent.class, 0);
+//            adPrimaryKey = new AtomicLong(realm.where(AdContent.class).max("id").longValue() + 1);
+//            RealmResults<AdContent> results = realm.where(AdContent.class).equalTo("id", 0).findAll();
+//            results.deleteAllFromRealm();
+//            realm.commitTransaction();
+//        }
+//
+//        try {
+//            catPrimaryKey = new AtomicLong(realm.where(AdCategory.class).max("id").longValue() + 1);
+//        } catch (Exception e) {
+//            realm.beginTransaction();
+//            AdCategory category = realm.createObject(AdCategory.class, 0);
+//            catPrimaryKey = new AtomicLong(realm.where(AdCategory.class).max("id").longValue() + 1);
+//            RealmResults<AdCategory> results = realm.where(AdCategory.class).equalTo("id", 0).findAll();
+//            results.deleteAllFromRealm();
+//            realm.commitTransaction();
+//
+//
+//        }finally {
+//            realm.close();
+//        }
+//
+//
+//    }
 
     public static Context getContext(){
         return context;

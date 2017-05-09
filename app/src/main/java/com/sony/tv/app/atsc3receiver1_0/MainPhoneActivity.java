@@ -10,6 +10,7 @@ import android.util.Log;
 
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.sony.tv.app.atsc3receiver1_0.app.ATSC3;
+import com.sony.tv.app.atsc3receiver1_0.app.AdCategory;
 import com.sony.tv.app.atsc3receiver1_0.app.Ads;
 import com.sony.tv.app.atsc3receiver1_0.app.FluteReceiver;
 import com.sony.tv.app.atsc3receiver1_0.app.FluteTaskManagerBase;
@@ -67,21 +68,35 @@ public class MainPhoneActivity extends Activity {
 
             }
         }
-        Ads ads=new Ads(this);
+        AdCategory adCategory=new AdCategory(this);
         try {
-            String[] dirlist=activity.getApplicationContext().getAssets().list("ADS");
-            for (int i=0; i<dirlist.length; i++) {
-                String[] adList = activity.getApplicationContext().getAssets().list("ADS/".concat(dirlist[i]));
-                for (int j=0; j<adList.length;j++) {
+            String[] dirCatList=activity.getApplicationContext().getAssets().list("ADS");
+            for (int i=0; i<dirCatList.length; i++) {
+                AdCategory.addAdCategory(dirCatList[i]);
+                String[] dirlist=activity.getApplicationContext().getAssets().list("ADS/".concat(dirCatList[i]));
 
-                    if (adList[j].endsWith(".mpd")) {
-                        ads.addAd(Ads.SCHEME_ASSET.concat(":///ADS/").concat(dirlist[i]).concat("/").concat(adList[j]), true);
-
+                for (int j=0; j<dirlist.length; j++) {
+                    String[] adList = activity.getApplicationContext().getAssets().list("ADS/".concat(dirCatList[i]).concat("/").concat(dirlist[j]));
+                    for (int k = 0; k < adList.length; k++) {
+                        if (adList[k].endsWith(".mpd")) {
+                            AdCategory.addAd(dirCatList[i], Ads.SCHEME_ASSET.concat(":///ADS/").concat(dirCatList[i]).concat("/").concat(dirlist[j]).concat("/").concat(adList[k]));
+                        }
                     }
-
                 }
-
             }
+//            String[] dirlist=activity.getApplicationContext().getAssets().list("ADS");
+//            for (int i=0; i<dirlist.length; i++) {
+//                String[] adList = activity.getApplicationContext().getAssets().list("ADS/".concat(dirlist[i]));
+//                for (int j=0; j<adList.length;j++) {
+//
+//                    if (adList[j].endsWith(".mpd")) {
+//                        ads.addAd(Ads.SCHEME_ASSET.concat(":///ADS/").concat(dirlist[i]).concat("/").concat(adList[j]), true);
+//
+//                    }
+//
+//                }
+//
+//            }
         } catch (IOException e) {
             e.printStackTrace();
         }

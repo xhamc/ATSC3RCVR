@@ -563,14 +563,14 @@ public final class SimpleExoPlayerView extends FrameLayout {
     if (!useController || player == null) {
       return;
     }
-    int playbackState = player.getPlaybackState();
-    boolean showIndefinitely = playbackState == ExoPlayer.STATE_IDLE
-        || playbackState == ExoPlayer.STATE_ENDED || !player.getPlayWhenReady();
-    boolean wasShowingIndefinitely = controller.isVisible() && controller.getShowTimeoutMs() <= 0;
-    controller.setShowTimeoutMs(showIndefinitely ? 0 : controllerShowTimeoutMs);
-    if (isForced || showIndefinitely || wasShowingIndefinitely) {
+//    int playbackState = player.getPlaybackState();
+//    boolean showIndefinitely = playbackState == ExoPlayer.STATE_IDLE
+//        || playbackState == ExoPlayer.STATE_ENDED || !player.getPlayWhenReady();
+//    boolean wasShowingIndefinitely = controller.isVisible() && controller.getShowTimeoutMs() <= 0;
+//    controller.setShowTimeoutMs(showIndefinitely ? 0 : controllerShowTimeoutMs);
+//    if (isForced || showIndefinitely || wasShowingIndefinitely) {
       controller.show();
-    }
+//    }
   }
 
   private void updateForCurrentTrackSelections() {

@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import com.sony.tv.app.atsc3receiver1_0.R;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
@@ -24,14 +25,9 @@ import io.realm.Realm;
 
 public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHolder>{
     private int selectedPosition = -1;
-    private final List<AdCategory> adsList;
-    private final Realm realm;
 
-    public AdsListAdapter(List<AdCategory> adsList, Realm realm) {
-        this.adsList = adsList;
-        this.realm = realm;
+    public AdsListAdapter() {
     }
-
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -43,7 +39,8 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
-        final AdCategory selectedCategory = adsList.get(position);
+        final String selectedCategory = AdCategory.adCategoryPosition.get(position);
+
         if (selectedPosition == position){
             holder.itemView.setBackgroundColor(Color.parseColor("#000000"));
         }else {
@@ -58,53 +55,39 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
             }
         });
 
-        if (selectedCategory != null && !TextUtils.isEmpty(selectedCategory.getName())) {
-            holder.adNameTextView.setText(selectedCategory.getName());
-        }
 
-        if (selectedCategory != null && selectedCategory.getAds().size() > 0) {
-            if (selectedCategory.getAds().get(0).enabled == true){
+        if (selectedCategory != null ) {
+            holder.adNameTextView.setText(selectedCategory);
+        }
+        if (selectedCategory != null ) {
+            if (AdCategory.isEnabled(selectedCategory)){
                 holder.adEnableCheckbox.setChecked(true);
             } else {
                 holder.adEnableCheckbox.setChecked(false);
             }
         }
 
-        if (selectedCategory.getAds() != null && selectedCategory.getAds().size() > 0){
+
+        if (selectedCategory!= null){
+
             String listOfAdTitle = "";
-            int count = 0;
-
-            for (AdContent selectedAd: selectedCategory.getAds()){
-                if (selectedAd != null && !TextUtils.isEmpty(selectedAd.title)) {
-                    String title = selectedAd.title;
-                    title = title + "\n";
-                    listOfAdTitle += title;
-                }
-                if (selectedAd != null && selectedAd.displayCount > 0) {
-                    count += selectedAd.displayCount;
-                }
+            ArrayList<AdContent> ads= AdCategory.adMap.get(selectedCategory).getAds();
+            for (AdContent ad:ads){
+                String title=ad.title.concat ("\n");
+                listOfAdTitle+=title;
             }
+
             holder.adUrlTextView.setText(listOfAdTitle);
-            if (count > 0) {
-                holder.adCounterTextView.setText(String.valueOf(count));
-            }
-
 
         }
-
-
-
-
 
     }
 
     @Override
     public int getItemCount() {
-        if (adsList != null){
-            return adsList.size();
-        }else {
-            return 0;
-        }
+
+        return AdCategory.adCategoryNames.size();
+
     }
 
 
@@ -125,26 +108,14 @@ public class AdsListAdapter extends RecyclerView.Adapter<AdsListAdapter.ViewHold
             adEnableCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    final AdCategory category = adsList.get(getLayoutPosition());
+                    final String category = AdCategory.adCategoryPosition.get(getLayoutPosition());
                     if (isChecked){
-                        realm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                for (AdContent selectedAd: category.getAds())
-                                    selectedAd.enabled = true;
-
-                            }
-                        });
-                    }else {
-                        realm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                for (AdContent selectedAd: category.getAds())
-                                    selectedAd.enabled = false;
-                            }
-                        });
+                        AdCategory.enable(category);
+                    }else{
+                        AdCategory.disable(category);
 
                     }
+
                 }
             });
 

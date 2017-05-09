@@ -125,8 +125,8 @@ public class NewAddDialogFragment extends DialogFragment {
     }
 
     private void saveAd() {
-        Ads.addAd(adUrlEditText.getText().toString(), false);
-        EventBus.getDefault().post(new OnNewAdInsertedEvent());
+//        Ads.addAd(adUrlEditText.getText().toString(), false);
+//        EventBus.getDefault().post(new OnNewAdInsertedEvent());
 //        realm.executeTransaction(new Realm.Transaction() {
 //            @Override
 //            public void execute(Realm realm) {

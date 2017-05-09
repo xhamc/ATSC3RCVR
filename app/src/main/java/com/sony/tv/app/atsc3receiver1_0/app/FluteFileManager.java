@@ -432,7 +432,7 @@ public class FluteFileManager  implements FluteFileManagerBase {
                                     if (lastAdInsertion==null || !start.equals(lastAdStart)){
                                         lastAdStart=start;
                                         start="start=\"".concat(start).concat("\"");
-                                        lastAdInsertion=Ads.getNextAd(false);
+                                        lastAdInsertion=AdCategory.getNextAd(false);
                                         lastAdInsertion.period=lastAdInsertion.period.replaceFirst( "start=['|\"][PTMHS\\.0-9]+['|\"]",start);
 
                                     }

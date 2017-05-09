@@ -9,8 +9,9 @@ import io.realm.annotations.PrimaryKey;
 /**
  * Created by valokafor on 4/12/17.
  */
-public class AdContent extends RealmObject{
-    @PrimaryKey
+//public class AdContent extends RealmObject{
+public class AdContent{
+
     public long id;
     public String title;
     public String period;
@@ -19,7 +20,7 @@ public class AdContent extends RealmObject{
     public String replaceStartString;
     public int displayCount;
     public boolean enabled;
-    @Ignore
+    public String category;
     public Uri uri;
     public String uriString;
 
@@ -27,26 +28,25 @@ public class AdContent extends RealmObject{
 
     }
 
-    public AdContent(String title, String period, String duration, String scheme, String replaceStartString, Uri uri, boolean enabled){
+    public AdContent(String title, String period, String duration, String scheme, String replaceStartString, Uri uri){
         this.title=title;
         this.period=period;
         this.duration=duration;
         this.scheme=scheme;
         this.replaceStartString=replaceStartString;
         this.uri=uri;
-        this.enabled=true;
         this.uriString = uri.toString();
     }
-
-
-    public void updateToRealm(AdContent ad) {
-        title = ad.title;
-        period = ad.period;
-        duration = ad.duration;
-        scheme = ad.scheme;
-        replaceStartString = ad.replaceStartString;
-        displayCount = ad.displayCount;
-        enabled = ad.enabled;
-        uriString = ad.uri.toString();
-    }
+//
+//
+//    public void updateToRealm(AdContent ad) {
+//        title = ad.title;
+//        period = ad.period;
+//        duration = ad.duration;
+//        scheme = ad.scheme;
+//        replaceStartString = ad.replaceStartString;
+//        displayCount = ad.displayCount;
+//        enabled = ad.enabled;
+//        uriString = ad.uri.toString();
+//    }
 }

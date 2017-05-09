@@ -564,17 +564,19 @@ private byte[] signalingStorage;                                                
                                     if (lastAdInsertion==null || !start.equals(lastAdStart)){
                                         lastAdStart=start;
                                         start="start=\"".concat(start).concat("\"");
-                                        lastAdInsertion=Ads.getNextAd(false);
-                                        lastAdInsertion.period=lastAdInsertion.period.replaceFirst( "start=['|\"][PTMHS\\.0-9]+['|\"]",start);
-
-                                        Log.d("DebugTime".concat(baseDataSpec.uri.getHost()),"Switch ad period position: ads now in period: "+periodNumber);
+                                        lastAdInsertion=AdCategory.getNextAd(false);
+                                        if (null!=lastAdInsertion) {
+                                            lastAdInsertion.period = lastAdInsertion.period.replaceFirst("start=['|\"][PTMHS\\.0-9]+['|\"]", start);
+//                                            Log.d("DebugTime".concat(baseDataSpec.uri.getHost()), "Switch ad period position: ads now in period: " + periodNumber);
+                                        }
                                     }
-                                    if (periodNumber==0){
-                                        Log.d("DebugTime".concat(baseDataSpec.uri.getHost()),"Switch ad period position: ads now in period: "+periodNumber);
+//                                    if (periodNumber==0){
+//                                        Log.d("DebugTime".concat(baseDataSpec.uri.getHost()),"Switch ad period position: ads now in period: "+periodNumber);
+//                                    }
+                                    if (null!=lastAdInsertion) {
+
+                                        mpdData = mpdData.substring(0, indexStart).concat(lastAdInsertion.period).concat(mpdData.substring(indexEnd + 9, mpdData.length()));
                                     }
-
-                                    mpdData = mpdData.substring(0, indexStart).concat(lastAdInsertion.period).concat(mpdData.substring(indexEnd + 9, mpdData.length()));
-
                                     break;
                                 }else {
                                     if (lastAdInsertion != null) {
