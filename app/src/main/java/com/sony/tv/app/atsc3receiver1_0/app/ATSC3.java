@@ -3,8 +3,6 @@ package com.sony.tv.app.atsc3receiver1_0.app;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 
 import com.google.android.exoplayer2.upstream.DataSource;
 
@@ -14,16 +12,13 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 
 import com.google.android.exoplayer2.util.Util;
-import com.sony.tv.app.atsc3receiver1_0.PlayerActivity;
-import com.sony.tv.app.atsc3receiver1_0.SampleChooserFragment;
+import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteDataSourceFactory;
+import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteReceiver;
+import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteTaskManagerBase;
+import com.sony.tv.app.atsc3receiver1_0.app.LLS.LLSReceiver;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.atomic.AtomicLong;
-
-import io.realm.Realm;
-import io.realm.RealmConfiguration;
-import io.realm.RealmResults;
 
 
 /**
@@ -55,10 +50,11 @@ public class ATSC3 extends Application {
     public interface CallBackInterface{
         void callBackSLTFound();
         void callBackSTFound();
-        void callBackUSBDFound(FluteTaskManagerBase fluteTaskManagerBase);
-        void callBackSTSIDFound(FluteTaskManagerBase fluteTaskManagerBase );
-        void callBackManifestFound(FluteTaskManagerBase fluteTaskManagerBase);
-        void callBackFluteStopped(FluteTaskManagerBase fluteTaskManagerBase);
+        void callBackUSBDFound(int index);
+        void callBackSTSIDFound(int index );
+        void callBackManifestFound(int index);
+        void callBackFluteStopped(int index);
+        void callBackVideoFileSize(int index, int size);
     }
 
 
@@ -164,7 +160,7 @@ public class ATSC3 extends Application {
 
     }
 
-    private static ATSCSample getSampleFromIndex(int i){
+    public static ATSCSample getSampleFromIndex(int i){
 //        String host="239.255.8."+String.format("%d",i+1);
 //        String url=host;
         String title = LLSReceiver.getInstance().slt.mSLTData.mServices.get(i).shortServiceName;
@@ -182,10 +178,12 @@ public class ATSC3 extends Application {
      * @param index
      */
     private static void resetTimeStamp(int index){
-        if (null!=FluteReceiver.mFluteTaskManager){
-            if (FluteReceiver.mFluteTaskManager.length>index){
-                if (null!=FluteReceiver.mFluteTaskManager[index].fileManager()){
-                    FluteReceiver.mFluteTaskManager[index].fileManager().resetTimeStamp();
+        FluteReceiver sInstance=FluteReceiver.getInstance();
+
+        if (null!=sInstance.mFluteTaskManager){
+            if (sInstance.mFluteTaskManager.length>index){
+                if (null!=sInstance.mFluteTaskManager[index].fileManager()){
+                    sInstance.mFluteTaskManager[index].fileManager().resetTimeStamp();
                 }
             }
         }

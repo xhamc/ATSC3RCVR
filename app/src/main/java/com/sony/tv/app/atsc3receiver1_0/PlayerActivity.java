@@ -18,12 +18,8 @@ package com.sony.tv.app.atsc3receiver1_0;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -81,28 +77,20 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
 import com.sony.tv.app.atsc3receiver1_0.app.ATSC3;
-import com.sony.tv.app.atsc3receiver1_0.app.AdCategory;
-import com.sony.tv.app.atsc3receiver1_0.app.AdContent;
-import com.sony.tv.app.atsc3receiver1_0.app.AdsListAdapter;
-import com.sony.tv.app.atsc3receiver1_0.app.FluteReceiver;
-import com.sony.tv.app.atsc3receiver1_0.app.LLSReceiver;
-import com.sony.tv.app.atsc3receiver1_0.app.NewAddDialogFragment;
-
-import org.greenrobot.eventbus.EventBus;
+import com.sony.tv.app.atsc3receiver1_0.app.Ad.AdCategory;
+import com.sony.tv.app.atsc3receiver1_0.app.Ad.AdsListAdapter;
+import com.sony.tv.app.atsc3receiver1_0.app.Ad.NewAddDialogFragment;
 
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 
 import io.realm.Realm;
-import io.realm.RealmResults;
 
 import static com.sony.tv.app.atsc3receiver1_0.app.ATSC3.getContext;
 
@@ -325,7 +313,7 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
   @Override
   protected void onDestroy() {
     super.onDestroy();
-    realm.close();
+//    realm.close();
 
   }
 

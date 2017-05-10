@@ -1,10 +1,8 @@
 package com.sony.tv.app.atsc3receiver1_0;
 
-import android.app.Fragment;
 import android.test.InstrumentationTestCase;
 
-import com.sony.tv.app.atsc3receiver1_0.app.ContentFileLocation;
-import com.sony.tv.app.atsc3receiver1_0.app.STSIDParser;
+import com.sony.tv.app.atsc3receiver1_0.app.Flute.STSIDParser;
 
 import java.io.IOException;
 import java.io.InputStream;
