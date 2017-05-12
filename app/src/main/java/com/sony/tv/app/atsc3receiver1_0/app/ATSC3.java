@@ -12,13 +12,14 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 
 import com.google.android.exoplayer2.util.Util;
+import com.sony.tv.app.atsc3receiver1_0.app.Flute.ContentFileLocation;
 import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteDataSourceFactory;
 import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteReceiver;
-import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteTaskManagerBase;
 import com.sony.tv.app.atsc3receiver1_0.app.LLS.LLSReceiver;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 
 
 /**
@@ -54,7 +55,7 @@ public class ATSC3 extends Application {
         void callBackSTSIDFound(int index );
         void callBackManifestFound(int index);
         void callBackFluteStopped(int index);
-        void callBackVideoFileSize(int index, int size);
+        void callBackVideoFileSize(int index, HashMap<String, ContentFileLocation> files);
     }
 
 

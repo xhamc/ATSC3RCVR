@@ -67,12 +67,6 @@
             </intent-filter>
         </activity>
 
-        <receiver
-            android:name=".PlayerActivity$UsbBroadcastReceiver"
-            android:enabled="true"
-            android:exported="false" />
-
-        <activity android:name=".BaseActivity"></activity>
     </application>
 
 </manifest>

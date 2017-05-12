@@ -43,10 +43,19 @@ public class STSIDParser {
         return Long.parseLong( stsid.rs.get(0).ls.get(index).attrs.get("bw"));
     }
     public String getFileTempate(int index){
+        if (null!=stsid && null!=stsid.rs && null!=stsid.rs.get(0) && null !=stsid.rs.get(0).ls && null!=stsid.rs.get(0).ls.get(index)
+                && null!=stsid.rs.get(0).ls.get(index).srcFlow && null!=stsid.rs.get(0).ls.get(index).srcFlow.efdt && null!=stsid.rs.get(0).ls.get(index).srcFlow.efdt.fileTemplate )
         return stsid.rs.get(0).ls.get(index).srcFlow.efdt.fileTemplate.text;
+        else
+            return "";
     }
     public String getFileInitTempate(int index){
+        if (null!=stsid && null!=stsid.rs && null!=stsid.rs.get(0) && null !=stsid.rs.get(0).ls && null!=stsid.rs.get(0).ls.get(index)
+                && null!=stsid.rs.get(0).ls.get(index).srcFlow && null!=stsid.rs.get(0).ls.get(index).srcFlow.efdt && null!=stsid.rs.get(0).ls.get(index).srcFlow.efdt.fdtParameters
+                &&  null!=stsid.rs.get(0).ls.get(index).srcFlow.efdt.fdtParameters.file &&  null!=stsid.rs.get(0).ls.get(index).srcFlow.efdt.fdtParameters.file.attrs)
         return stsid.rs.get(0).ls.get(index).srcFlow.efdt.fdtParameters.file.attrs.get("Content-Location");
+        else
+            return "";
     }
     public int getFileInitTOI(int index){
         return Integer.parseInt(stsid.rs.get(0).ls.get(index).srcFlow.efdt.fdtParameters.file.attrs.get("TOI"));

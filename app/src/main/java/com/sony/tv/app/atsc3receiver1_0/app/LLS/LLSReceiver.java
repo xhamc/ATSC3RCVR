@@ -18,8 +18,10 @@ import com.sony.tv.app.atsc3receiver1_0.app.Flute.FakeUdpDataSource;
 import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.zip.GZIPInputStream;
+//import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipException;
+
+import static com.sony.tv.app.atsc3receiver1_0.app.LLS.GZIPInputStream.GZIP_MAGIC;
 
 
 /**
@@ -313,52 +315,42 @@ public class LLSReceiver {
 
         public void transferDataToUIThread(int type, byte[] data, int len){
 
-            if (type==SLT ) {
-                if (ATSC3.GZIP) {
-                    try {
-                        GZIPInputStream gzipInputStream;
-                        ByteArrayInputStream byteArray = new ByteArrayInputStream(data, 4, data.length - 4);
-                        gzipInputStream = new GZIPInputStream(byteArray);
-                        int unziplen = gzipInputStream.read(buffer, 0, buffer.length);
-                        gzipInputStream.close();
+            if (data[4]==31 && data[5]==-117){
+
+                GZIPInputStream gzipInputStream;
+
+                ByteArrayInputStream byteArray = new ByteArrayInputStream(data, 6, data.length - 6);
+
+                try {
+                    gzipInputStream = new GZIPInputStream(byteArray);
+                    int unziplen = gzipInputStream.read(buffer, 0, buffer.length);
+                    gzipInputStream.close();
+                    if (type==SLT){
                         mSLTData = new String(buffer, 0, unziplen);
                         sInstance.handleTaskState(this, FOUND_SLT);
-
-                    } catch (ZipException e) {
-
-                    } catch(IOException e2){
-                        e2.printStackTrace();
-                    }
-
-                }else{
-
-                    mSLTData=new String (data,4,len-4);
-                    sInstance.handleTaskState(this, FOUND_SLT);
-
-                }
-
-
-            }else if (type==ST) {
-                if (ATSC3.GZIP) {
-                    try {
-                        GZIPInputStream gzipInputStream;
-                        ByteArrayInputStream byteArray = new ByteArrayInputStream(data, 4, data.length - 4);
-                        gzipInputStream = new GZIPInputStream(byteArray);
-                        int unziplen = gzipInputStream.read(buffer, 0, buffer.length);
-                        gzipInputStream.close();
+                    }else if (type==ST){
                         mSTData = new String(buffer, 0, unziplen);
                         sInstance.handleTaskState(this, FOUND_ST);
 
-                    } catch (ZipException e) {
-
-                    } catch (IOException e2) {
-                        e2.printStackTrace();
                     }
-                } else {
+
+                } catch (ZipException e) {
+
+                } catch(IOException e2){
+                    e2.printStackTrace();
+                }
+            }else{
+                if (type==SLT){
+                    mSLTData=new String (data,4,len-4);
+                    sInstance.handleTaskState(this, FOUND_SLT);
+                }else if (type==ST){
                     mSTData = new String(data, 4 , len - 4);
                     sInstance.handleTaskState(this, FOUND_ST);
                 }
+
+
             }
+
 
         }
 

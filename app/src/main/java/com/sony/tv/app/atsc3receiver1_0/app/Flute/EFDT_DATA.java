@@ -1,4 +1,4 @@
-package com.sony.tv.app.atsc3receiver1_0.app.LLS;
+package com.sony.tv.app.atsc3receiver1_0.app.Flute;
 
 import android.net.Uri;
 

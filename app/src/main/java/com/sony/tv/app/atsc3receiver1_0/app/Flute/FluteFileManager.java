@@ -30,10 +30,11 @@ import static com.google.android.exoplayer2.util.Util.parseXsDuration;
  * Created by xhamc on 5/9/17.
  */
 
-public class FluteFileManager implements FluteFileManagerBase {
+public class FluteFileManager {
 
 
-    private static final long AVAILABILITY_TIME_OFFSET=4500;                    //Offset from time the content is received in buffer to time reported to player
+    public static final long AVAILABILITY_TIME_OFFSET=4500;                    //Offset from time the content is received in buffer to time reported to player
+    public static final long MIN_BUFFER_TIME_LONG=0;
     private static final String MIN_BUFFER_TIME="PT2S";                         //Used by player to set lower buffer threshold
     private static final String TIME_SHIFT_BUFFER_OFFSET="PT3S";
     private static final String TIME_SHIFT_BUFFER_DEPTH="PT3S";                 //Used by player to set the depth of the buffer
@@ -43,30 +44,25 @@ public class FluteFileManager implements FluteFileManagerBase {
     private static final String TAG="FileManager";
     public static final int MAX_SIGNALING_BUFFERSIZE=10000;                     //Size of the circular buffer to manage signaling
     public static final int MAX_VIDEO_BUFFERSIZE=10000000;                      //Size of the circular buffer to manage video
-    public static final int MAX_AUDIO_BUFFERSIZE=1000000;                       //Size of the circular buffer to manage audio
     private static final int MAX_FILE_RETENTION_MS=10000;                       //Max time to keep stale content around (unused)
 
     private HashMap<String, ContentFileLocation> mapFileLocationsSig;           //**
-    private HashMap<String, ContentFileLocation> mapFileLocationsAud;           //Map of filename to location in buffers
     private HashMap<String, ContentFileLocation> mapFileLocationsVid;           //**
 
     private ArrayList<HashMap<String, ContentFileLocation>> arrayMapFileLocations;  //ArrayList of above
-    private HashMap<Integer,String> map_TOI_FileNameSig;                        //**
-    private HashMap<Integer,String> map_TOI_FileNameAud;                        //Given key TOI, return value FileName
-    private HashMap<Integer,String> map_TOI_FileNameVid;                        //**
-    private ArrayList<HashMap<Integer,String>> array_MapTOI_FileName;                           //ArrayList of above
-    private HashMap<Integer/*BufferNo*/, Integer/*TSI*/> mapGetTSIFromBufferNumber;             //retrieve the relevant FileManager from the TSI value
+    private HashMap<Long,String> map_TOI_FileNameSig;                        //**Given key TOI/TSI, return value FileName
+    private HashMap<Long,String> map_TOI_FileNameVid;                        //**
+    private ArrayList<HashMap<Long,String>> array_MapTOI_FileName;                           //ArrayList of above
     private HashMap<Integer/*TSI*/, Integer/*BufferNo*/> mapGetBufferNumberFromTSI;             //retrieve the relevant FileManager from the TSI value
 
     private byte[] signalingStorage;                                                //**
     private byte[] videoStorage;                                                //Uninitialized circular buffers
-    private byte[] audioStorage;                                                //**
     private ArrayList<byte[]> storage=new ArrayList<>();                        //Array list of above
 
     private ReentrantLock lock = new ReentrantLock();                           //Lock for write and reading buffers
 
-    private int[] firstAvailablePosition={0,0,0};                               //Tracks the first available write position in each buffer
-    private int[] maxAvailablePosition={MAX_SIGNALING_BUFFERSIZE-1,  MAX_VIDEO_BUFFERSIZE-1, MAX_AUDIO_BUFFERSIZE-1,};  //Tracks the last available write position in each buffer
+    private int[] firstAvailablePosition={0,0};                               //Tracks the first available write position in each buffer
+    private int[] maxAvailablePosition={MAX_SIGNALING_BUFFERSIZE-1,  MAX_VIDEO_BUFFERSIZE-1};  //Tracks the last available write position in each buffer
 
     private FluteFileManager sInstance;
 
@@ -77,15 +73,10 @@ public class FluteFileManager implements FluteFileManagerBase {
     private int videoStartNumber;                                               //Used when faking the manifest only
     private long availabilityStartTimeOffset;                                   //Offset from this (set to static offset above)
     private long liveReadFromBufferTime;
-    private ManifestTimePair manifestTimePair;
-    private class ManifestTimePair{
-        public String manifest;
-        public long timeReceived;
-    }
+
     private AdContent lastAdInsertion;
     private String lastAdStart="";
 
-    private SLS sls=new SLS();
 
     public boolean manifestFound=false;
     public boolean stsidFound=false;
@@ -110,42 +101,27 @@ public class FluteFileManager implements FluteFileManagerBase {
     public void reset(){
 
         mapFileLocationsSig=new HashMap<>();
-        mapFileLocationsAud=new HashMap<>();
         mapFileLocationsVid=new HashMap<>();
 
         arrayMapFileLocations = new ArrayList<>();
         map_TOI_FileNameSig = new HashMap<>();
-        map_TOI_FileNameAud = new HashMap<>();
         map_TOI_FileNameVid = new HashMap<>();
         array_MapTOI_FileName =new ArrayList<>();
-        mapGetTSIFromBufferNumber=new HashMap<>();             //retrieve the relevant FileManager from the TSI value
         mapGetBufferNumberFromTSI=new HashMap<>();             //retrieve the relevant FileManager from the TSI value
 
         signalingStorage=new byte[MAX_SIGNALING_BUFFERSIZE];
         videoStorage=new byte[MAX_VIDEO_BUFFERSIZE];
-        audioStorage=new byte[MAX_AUDIO_BUFFERSIZE];
 
         arrayMapFileLocations.add(0,mapFileLocationsSig);
         arrayMapFileLocations.add(1,mapFileLocationsVid);
-        arrayMapFileLocations.add(2,mapFileLocationsAud);
         array_MapTOI_FileName.add(0,map_TOI_FileNameSig);
         array_MapTOI_FileName.add(1,map_TOI_FileNameVid);
-        array_MapTOI_FileName.add(2,map_TOI_FileNameAud);
 
-        /*default mapping of TSI to buffer positions*/
-        //These get added to when discovered from STSID
-        mapGetTSIFromBufferNumber.put(0, 0);
-        mapGetTSIFromBufferNumber.put(1,1);
-        mapGetTSIFromBufferNumber.put(2,2);
         mapGetBufferNumberFromTSI.put(0, 0);
-        mapGetBufferNumberFromTSI.put(1, 1);
-        mapGetBufferNumberFromTSI.put(2, 2);
 
         storage.add(0,signalingStorage);
         storage.add(1,videoStorage);
-        storage.add(2,audioStorage);
 
-        manifestTimePair=new ManifestTimePair();
         liveReadFromBufferTime=0;
 
 
@@ -153,8 +129,8 @@ public class FluteFileManager implements FluteFileManagerBase {
 
     }
 
-    public int getNumberOfAudioFiles(){
-        return map_TOI_FileNameAud.size();
+    public int getNumberOfVideoFiles(){
+        return map_TOI_FileNameVid.size();
     }
 
     public void resetTimeStamp(){
@@ -163,7 +139,6 @@ public class FluteFileManager implements FluteFileManagerBase {
 
 
     public FluteFileManager getInstance(){ return sInstance; }
-//    public static FluteFileManagerQu getInstance(){ return sInstance; }
 
 
     private static final int MPD=0;
@@ -293,19 +268,19 @@ public class FluteFileManager implements FluteFileManagerBase {
      * @return      return true if the buffer has been allocated to the relevant TSI
      * @throws Exception
      */
-    public boolean create(RouteDecodeBase r) throws Exception {
+    public boolean create(RouteDecode r) throws Exception {
         int tsi=r.tsi();
         Integer index=mapGetBufferNumberFromTSI.get(tsi);
         if (null==index){
             Log.e(TAG,"Asking for tsi that isn't there: :"+tsi);
             return false;
         }
-        HashMap<Integer,String> t=array_MapTOI_FileName.get(index);                                       //TOI maps to a filename
+        HashMap<Long,String> t=array_MapTOI_FileName.get(index);                                       //TOI maps to a filename
         HashMap<String, ContentFileLocation> m=arrayMapFileLocations.get(index);
         firstAvailablePosition[index] = (firstAvailablePosition[index] + r.contentLength()) > maxAvailablePosition[index] ? 0 : firstAvailablePosition[index];
         Date now= Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
-        ContentFileLocation c = new ContentFileLocation(r.fileName(), r.toi(), firstAvailablePosition[index], r.contentLength(),
-                now.getTime(), now.getTime() + MAX_FILE_RETENTION_MS);
+        ContentFileLocation c = new ContentFileLocation(r.fileName(), r.toi(), r.tsi(), firstAvailablePosition[index], r.contentLength(),
+                now.getTime(), now.getTime() + MAX_FILE_RETENTION_MS, storage.get(index));
         Iterator<Map.Entry<String,ContentFileLocation>> iterator= m.entrySet().iterator();
         while (iterator.hasNext()) {                                                                      //remove any content from the map that will get overwritten by this file
             Map.Entry<String,ContentFileLocation> it= iterator.next();
@@ -314,15 +289,25 @@ public class FluteFileManager implements FluteFileManagerBase {
             int cStart=c.start;
             int cEnd=c.start+c.contentLength-1;
             if ( (itStart<=cStart && itEnd>=cStart) || (itStart>=cStart && itStart<=cEnd) ) {             //the new content will overwrite this entry so remove from list;
-                t.remove(it.getValue().toi);
+                t.remove(intsTolong(it.getValue().toi, it.getValue().tsi));
                 iterator.remove();
             }
         }
         m.put(c.fileName, c);
-        t.put(r.toi(),c.fileName);
+        if (r.type()==RouteDecode.EXT_FDT){
+
+            t.put(intsTolong(r.efdt_toi(),r.tsi()),c.fileName);
+        }else {
+            t.put(intsTolong(r.toi(), r.tsi()), c.fileName);
+        }
         firstAvailablePosition[index] += r.contentLength();
 
         return true;
+    }
+
+    private long intsTolong(int a, int b){
+
+        return (long) b<<32|a;
     }
 
     /**
@@ -334,104 +319,75 @@ public class FluteFileManager implements FluteFileManagerBase {
      * @param length    length of rela payload
      * @return          return the filename is the write is complete else empty string;
      */
-    public String write(RouteDecodeBase r, byte[] input, int offset, int length){
+    public ContentFileLocation write(RouteDecode r, byte[] input, int offset, int length){
         int toi=r.toi();
+        int tsi=r.tsi();
+        long toi_tsi=intsTolong(toi,tsi);
         lock.lock();
         try{
 //            Log.d(TAG,"TSI: "+r.tsi()+"  TOI: "+r.toi()+ " POS: "+r.arrayPosition()+"  Length: "+r.contentLength());
-            if (r.tsi() == 0  && r.arrayPosition()==0) {
-                if (r.toi()!=0) {                                                            //signaling
-                    r.fileName("sls.xml.new");
-                    create(r);
-                }else{
-                    return  "";                                                              //EFDT instance, do nothing for now as not needed!!!!
-                }
-            }else if (r.toi() == 0xFFFFFFFF && r.tsi() != 0 && r.arrayPosition()==0) {       //init file
-                r.fileName(generateInitFileName(r.tsi()));
-                if (!("").equals(r.fileName())) {
-                    r.fileName(r.fileName().concat(".new"));
-                    create(r);
-                }
-            } else if (r.arrayPosition()==0) {                                               //media file
-                r.fileName(generateFileName(r.toi(), r.tsi()));
-                if (!("").equals(r.fileName())) {
-                    r.fileName (r.fileName().concat(".new"));
-                    create(r);
-                }
-            }
-            if (!mapGetBufferNumberFromTSI.containsKey(r.tsi())){
+
+            if (!mapGetBufferNumberFromTSI.containsKey(tsi)){
 //                Log.d(TAG, "TSI value not found yet so skip object");
-                return "";
+                return null;
             }
 
-            int index=mapGetBufferNumberFromTSI.get(r.tsi());                               //maps to the storage buffer assigned this tsi
+            int index=mapGetBufferNumberFromTSI.get(tsi);                               //maps to the storage buffer assigned this tsi
 
             String fileName;
 
-            HashMap<Integer,String> t=array_MapTOI_FileName.get(index);                     //TOI maps to a filename
+            HashMap<Long,String> t=array_MapTOI_FileName.get(index);                     //TOI maps to a filename
             HashMap<String, ContentFileLocation> m=arrayMapFileLocations.get(index);        //and the fileName maps to the COntent location in buffer info
-            if (t.containsKey(toi) && m.containsKey(t.get(toi))){
-                ContentFileLocation l= m.get(t.get(toi));
+            if (t.containsKey(toi_tsi) && m.containsKey(t.get(toi_tsi))){
+                ContentFileLocation l= m.get(t.get(toi_tsi));
                 if (length<=(l.contentLength - l.nextWritePosition)){
                     System.arraycopy(input, offset, storage.get(index), l.start + l.nextWritePosition, length);
                     l.nextWritePosition+=length;
                     if (l.nextWritePosition==l.contentLength){
                         fileName=l.fileName.substring(0,l.fileName.length()-4);    //Finished so copy object to not ".new"
-                        Iterator<Map.Entry<Integer, String>> it=t.entrySet().iterator();
-                        while (it.hasNext()){
-                            Map.Entry<Integer, String> entry=it.next();
-                            if (entry.getValue().equals(fileName)){
-                                it.remove();
-                            }
-                        }
                         m.remove(l.fileName);
                         l.fileName=fileName;
                         Date now= Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
                         l.time=now.getTime();
                         m.put(fileName, l);
                         if (index==1){      //video
-                            fluteTaskManager.callBackInterface.callBackVideoFileSize(fluteTaskManager.index(),m.size());
+                            fluteTaskManager.callBackInterface.callBackVideoFileSize(fluteTaskManager.index(),m);
                         }
-                        if (fileName.contains("video")&& fileName.contains(".m4s")&&first){
-                            int v1=fileName.indexOf("/",1);
-                            int v2=fileName.indexOf(".",1);
-                            String number=fileName.substring(v1+1,v2);
-                            videoStartNumber=Integer.parseInt(number);
-                        }
-                        t.remove(toi);
-                        t.put(toi, fileName);
-                        if (r.tsi() == 0){
-                            sls.create(l,storage.get(index));
-                            for (int i=0; i<sls.stsidParser.getLSSize(); i++) {
-                                mapGetBufferNumberFromTSI.put(sls.stsidParser.getTSI(i), i+1); //TODO: Use bw to determine video if there is both audio and video
-                                mapGetTSIFromBufferNumber.put(i+1, sls.stsidParser.getTSI(i));
-//                                Log.d("DebugTime", "window for live: write offset from period zero secs: " + (double) (l.time - periodStart-availabilityStartTime) / 1000.0 +
-//                                        " fileName: sls.xml");
+                        if (ATSC3.FAKEMANIFEST) {
+
+                            if (fileName.contains("video") && fileName.contains(".m4s") && first) {
+                                int v1 = fileName.indexOf("/", 1);
+                                int v2 = fileName.indexOf(".", 1);
+                                String number = fileName.substring(v1 + 1, v2);
+                                videoStartNumber = Integer.parseInt(number);
                             }
-
-                        }else {
-                            if (!fileName.endsWith("2.m4s"))
-                                Log.d("DebugTime".concat(baseDataSpec.uri.getHost()), "window for live: write offset from period zero secs: " + (double) (l.time - periodStart-availabilityStartTime) / 1000.0 +
-                                        " fileName: "+fileName);
                         }
-
-
-                        Log.d(TAG, "Wrote file: "+ baseDataSpec.uri.toString().concat(fileName) +" of size "+ l.contentLength + " to buffer: "+index + "which is connected to TSI: " + mapGetTSIFromBufferNumber.get(index));
-                        return fileName;
+                        t.remove(toi_tsi);
+                        t.put(toi_tsi, fileName);
+                        Log.d(TAG, "Wrote file: "+ baseDataSpec.uri.toString().concat(fileName) +" of size "+ l.contentLength + " to buffer: "+index );
+                        return l;
                     }
                 }else {
                     Log.e(TAG, "Attempt at buffer write overrun: "+l.fileName);
                 }
             }
-            return "";
+            return null;
         } catch (Exception e){
             e.printStackTrace();
-            return "";
+            return null;
         }finally{
             lock.unlock();
         }
 
     }
+
+    public void setMappingForTSI(int[] tsi){
+        for (int i=0; i<tsi.length; i++) {
+            int index=(tsi[i]==0?0:1);
+            mapGetBufferNumberFromTSI.put(tsi[i], index); //TODO: Use bw to determine video if there is both audio and video
+        }
+    }
+
     /**
      * Determines the buffer location of the file and returns it. If request is manifest then return adjusted manifest (buffer times, AST, ad inserted periods)
      * @param fileName
@@ -448,18 +404,13 @@ public class FluteFileManager implements FluteFileManagerBase {
             if (ATSC3.FAKEMANIFEST) {
                 mpdData = ATSC3.manifestContents;
             }else{
-                ManifestTimePair mtp=sls.getManifest();
-                mpdData=mtp.manifest;
+                mpdData=fluteTaskManager.sls.getManifest();
             }
 
             mpdData=mpdData.replaceAll("Header\\.m4s","2.m4s");             //Kluge for NAB where manifest doesn't match filename for initialization
 
             mMPDbytes = parseManifest(mpdData);
-            String s=new String(mMPDbytes,0,mMPDbytes.length);
-//            Log.d(TAG,"MPD: "+ s);
             contentLength=mMPDbytes.length;
-//            Log.d("DebugTime","liveBufferTimeRead offset from period zero secs: "+(liveReadFromBufferTime-availabilityStartTime-periodStart)/1000.0 +
-//                    "  fileName: ManifestUpdate.mpd");
 
             return new FileBuffer(mMPDbytes, contentLength, 0);
 
@@ -501,7 +452,7 @@ public class FluteFileManager implements FluteFileManagerBase {
         MPDParser mpdParser;
         if (first){
             long firstTimeOffset=0;
-            mpdParser=new MPDParser(mpdData, mapFileLocationsVid, mapFileLocationsAud);
+            mpdParser=new MPDParser(mpdData);
             mpdParser.MPDParse();
 
             availabilityStartTimeOffset=AVAILABILITY_TIME_OFFSET;
@@ -534,7 +485,7 @@ public class FluteFileManager implements FluteFileManagerBase {
         String availabilityStartTimeString= formatter.format(availabilityStartTime);
         Log.d(TAG, availabilityStartTimeString);
 
-        mpdParser=new MPDParser(mpdHeader, mapFileLocationsVid, mapFileLocationsAud);
+        mpdParser=new MPDParser(mpdHeader);
         mpdParser.MPDParse();
         mpdParser.mpd.getAttributes().put("minBufferTime",MIN_BUFFER_TIME);
 //        mpdParser.mpd.getAttributes().put("timeShiftBufferOffset",TIME_SHIFT_BUFFER_OFFSET);
@@ -616,146 +567,6 @@ public class FluteFileManager implements FluteFileManagerBase {
 
     }
 
-
-    private String generateFileName(int toi, int tsi){
-
-        if (null!=sls.getSTSIDParse()){
-
-            String template=sls.mapTSItoFileTemplate.get(tsi);
-            if (null!=template){
-                String toi$ = String.format("%d", toi);
-                template=template.replaceAll("\\$TOI\\$", toi$);
-                if (!template.startsWith("/"))
-                    template="/".concat(template);
-                return template;
-            }
-
-        }
-        return "";
-    }
-
-    private String generateInitFileName(int tsi){
-
-        if (null!=sls.getSTSIDParse()){
-
-            String template=sls.mapTSItoFileInitTemplate.get(tsi);
-            if (null!=template) {
-                if (!template.startsWith("/"))
-                    template="/".concat(template);
-                return template;
-            }
-
-        }
-        return "";
-    }
-
-
-
-
-    private class SLS{
-
-        private String manifest="";
-        private String usbd="";
-        private String stsid="";
-        private String fileTemplate="";
-        private STSIDParser stsidParser;
-        private ContentFileLocation slsLocation;
-        public HashMap<Integer,String> mapTSItoFileTemplate=new HashMap<>();
-        public HashMap<Integer,String> mapTSItoFileInitTemplate=new HashMap<>();
-
-
-
-
-        public void create(ContentFileLocation contentFileLocation, byte[] storage){
-            slsLocation=contentFileLocation;
-            String sls=new String(storage,contentFileLocation.start,contentFileLocation.contentLength);
-            if (extractManifest(sls)){
-                manifestFound=true;
-                fluteTaskManager.callBackInterface.callBackManifestFound(fluteTaskManager.index());
-
-                //TODO create a manifest file in buffer
-            }
-            if (extractUSBD(sls)){
-                usbdFound=true;
-                fluteTaskManager.callBackInterface.callBackUSBDFound(fluteTaskManager.index());
-
-
-                //TODO create a usbd file in buffer
-            }
-            if (extractSTSID(sls)){
-                stsidFound=true;
-                fluteTaskManager.callBackInterface.callBackSTSIDFound(fluteTaskManager.index());
-
-
-            }
-
-        }
-
-
-        public ManifestTimePair getManifest(){
-            return manifestTimePair;
-        }
-
-        public String getUSBD(){
-            return usbd;
-        }
-        public String getSTSID(){
-            return stsid;
-        }
-        public STSIDParser getSTSIDParse(){
-            return stsidParser;
-        }
-
-        public void mapTSIToFileTemplate(){
-            for (int i=0; i<stsidParser.getLSSize(); i++){
-                mapTSItoFileTemplate.put(stsidParser.getTSI(i),stsidParser.getFileTempate(i));
-            }
-        }
-
-        public void mapTSIToInitTemplate(){
-            for (int i=0; i<stsidParser.getLSSize(); i++){
-                mapTSItoFileInitTemplate.put(stsidParser.getTSI(i),stsidParser.getFileInitTempate(i));
-            }
-        }
-
-        private boolean extractManifest(String sls){
-            if (sls.contains("<MPD") && sls.contains("/MPD>")){
-                int start=sls.indexOf("<MPD");
-                int end=sls.indexOf("/MPD>")+5;
-                manifestTimePair.manifest=("<?xml version=\"1.0\" encoding=\"UTF-8\"?>").concat(sls.subSequence(start,end).toString());
-                manifestTimePair.timeReceived=slsLocation.time;
-
-                return true;
-            }
-            return false;
-        }
-        private boolean extractUSBD (String sls){
-            if (sls.contains("<bundleDescriptionROUTE") && sls.contains("/bundleDescriptionROUTE>")){
-                int start=sls.indexOf("<bundleDescriptionROUTE");
-                int end=sls.indexOf("/bundleDescriptionROUTE>")+24;
-                usbd= ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>").concat(sls.subSequence(start,end).toString());
-                return true;
-            }
-            return false;
-
-
-        }
-        private boolean extractSTSID(String sls){
-            if (sls.contains("<S-TSID") && sls.contains("/S-TSID>")){
-                int start=sls.indexOf("<S-TSID");
-                int end=sls.indexOf("/S-TSID>")+8;
-                stsid= ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>").concat(sls.subSequence(start,end).toString());
-                stsidParser=new STSIDParser(stsid);
-                mapTSIToFileTemplate();
-                mapTSIToInitTemplate();
-
-                return true;
-            }
-            return false;
-        }
-
-
-    }
 
 
 

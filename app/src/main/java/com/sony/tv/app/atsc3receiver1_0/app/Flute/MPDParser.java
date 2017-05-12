@@ -20,22 +20,16 @@ public class MPDParser {
 
     public MPD mpd;
     public StringBuilder stringBuilder=new StringBuilder(10000);
-    private HashMap<String, ContentFileLocation> videoMap;
-    private HashMap<String, ContentFileLocation> audioMap;
     private String data;
 
 
-    public MPDParser(String data, HashMap<String, ContentFileLocation> videoMap, HashMap<String, ContentFileLocation> audioMap){
-        this.videoMap=videoMap;
-        this.audioMap=audioMap;
+    public MPDParser(String data){
         this.data=data;
         stringBuilder.append("<?xml version=\"1.0\"?>\n");
         long now=System.currentTimeMillis();
         this.mpd=new MPD(stringBuilder);
         Log.d(TAG,"Time to parse MPD: "+(System.currentTimeMillis()-now));
     }
-
-
 
     public boolean MPDParse()
     {

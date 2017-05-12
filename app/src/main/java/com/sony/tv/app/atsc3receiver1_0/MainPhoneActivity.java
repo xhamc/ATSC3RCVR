@@ -1,13 +1,9 @@
 package com.sony.tv.app.atsc3receiver1_0;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.Activity;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 
 import com.google.android.exoplayer2.upstream.DataSpec;
@@ -15,11 +11,17 @@ import com.sony.tv.app.atsc3receiver1_0.app.ATSC3;
 import com.sony.tv.app.atsc3receiver1_0.app.ATSCSample;
 import com.sony.tv.app.atsc3receiver1_0.app.Ad.AdCategory;
 import com.sony.tv.app.atsc3receiver1_0.app.Ad.Ads;
+import com.sony.tv.app.atsc3receiver1_0.app.Flute.ContentFileLocation;
+import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteFileManager;
 import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteReceiver;
-import com.sony.tv.app.atsc3receiver1_0.app.Flute.FluteTaskManagerBase;
 import com.sony.tv.app.atsc3receiver1_0.app.LLS.LLSReceiver;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TimeZone;
 
 public class MainPhoneActivity extends Activity {
 
@@ -106,7 +108,6 @@ public class MainPhoneActivity extends Activity {
                     }
                     startSignalingFluteSession(type);
                     firstLLS = false;
-                    ;
                 }
             }
 
@@ -140,12 +141,22 @@ public class MainPhoneActivity extends Activity {
 
             }
 
+
             @Override
-            public void callBackVideoFileSize(int index, int size){
-                if (index==1){
-                    Log.d("index","index 1");
+            public void callBackVideoFileSize(int index, HashMap<String, ContentFileLocation> files){
+                if (ExoPlayerStarted) return;
+                long now= (Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime()).getTime() - FluteFileManager.AVAILABILITY_TIME_OFFSET - 2000;
+                boolean sufficientBuffer=false;
+                Iterator<Map.Entry<String, ContentFileLocation>> it=files.entrySet().iterator();
+
+                while (it.hasNext()){
+                    Map.Entry<String, ContentFileLocation> entry=it.next();
+                    if (entry.getValue().time<now){
+                        sufficientBuffer=true;
+                    }
                 }
-                if (size>5  && mFluteReceiver.mFluteTaskManager[index].isManifestFound()
+
+                if (sufficientBuffer  && mFluteReceiver.mFluteTaskManager[index].isManifestFound()
                         && mFluteReceiver.mFluteTaskManager[index].isSTSIDFound()
                         && mFluteReceiver.mFluteTaskManager[index].isUsbdFound()
                         )
@@ -157,8 +168,9 @@ public class MainPhoneActivity extends Activity {
                         return;
                     }
                 }
-                if (!ExoPlayerStarted) launchPlayer();
+                launchPlayer();
             }
+
 
             @Override
             public void callBackFluteStopped(int index){
@@ -251,21 +263,21 @@ public class MainPhoneActivity extends Activity {
     }
 
 
-    public void startCompleteFluteSession(int type, FluteTaskManagerBase fluteTaskManager){
-
-        int i=fluteTaskManager.index();
-        String host=mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationIpAddress;
-        String uriString="udp://".concat(host).concat(":").concat(
-                mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationUdpPort);
-        Log.d(TAG,"Opening: "+uriString);
-        Uri uri=Uri.parse(uriString);
-        DataSpec d=new DataSpec(uri);
-        Log.d(TAG,"Opening: "+uriString);
-//        DataSpec d2=new DataSpec(Uri.parse(uriString.replace("3000","3001")));
-//            mFluteReceiver.start(d, d2, i, type, callBackInterface);
-        mFluteReceiver.start(d, d, i, type, callBackInterface);
-
-    }
+//    public void startCompleteFluteSession(int type, FluteTaskManagerBase fluteTaskManager){
+//
+//        int i=fluteTaskManager.index();
+//        String host=mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationIpAddress;
+//        String uriString="udp://".concat(host).concat(":").concat(
+//                mLLSReceiver.slt.mSLTData.mServices.get(i).broadcastServices.get(0).slsDestinationUdpPort);
+//        Log.d(TAG,"Opening: "+uriString);
+//        Uri uri=Uri.parse(uriString);
+//        DataSpec d=new DataSpec(uri);
+//        Log.d(TAG,"Opening: "+uriString);
+////        DataSpec d2=new DataSpec(Uri.parse(uriString.replace("3000","3001")));
+////            mFluteReceiver.start(d, d2, i, type, callBackInterface);
+//        mFluteReceiver.start(d, d, i, type, callBackInterface);
+//
+//    }
 
 
 }

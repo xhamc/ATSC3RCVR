@@ -26,7 +26,7 @@ public class FluteReceiver  {
 
     private TransferListener<? super DataSource> listener;
 
-    public FluteTaskManagerBase[] mFluteTaskManager;
+    public FluteTaskManager[] mFluteTaskManager;
 
     private Handler mHandler;
     public static final int TASK_ERROR=-1;
@@ -61,7 +61,7 @@ public class FluteReceiver  {
         mHandler=new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message inputMessage) {
-                FluteTaskManagerBase flutetask= (FluteTaskManagerBase) inputMessage.obj;
+                FluteTaskManager flutetask= (FluteTaskManager) inputMessage.obj;
                 switch (inputMessage.what) {
                     // The decoding is done
 //                    case TASK_COMPLETE:
@@ -106,28 +106,15 @@ public class FluteReceiver  {
      */
     public void start(DataSpec signalingDataSpec, DataSpec avDataSpec, int index, int type, CallBackInterface callBackInterface) {
             if (null==avDataSpec) {
-                if (type == ATSC3.QUALCOMM) {
-                    if (null == mFluteTaskManager)
-                        mFluteTaskManager = new FluteTaskManagerQu[2];
-                    mFluteTaskManager[index] = new FluteTaskManagerQu(signalingDataSpec, callBackInterface,index);
-                } else {
-                    if (null == mFluteTaskManager)
-                        mFluteTaskManager = new FluteTaskManagerNAB[2];
-                    mFluteTaskManager[index] = new FluteTaskManagerNAB(signalingDataSpec, callBackInterface,index);
-                }
-                //new Thread(mFluteTaskManager[index]).start();
-            }else{
-                if (type == ATSC3.QUALCOMM) {
-                    if (null == mFluteTaskManager)
-                        mFluteTaskManager = new FluteTaskManagerQu[2];
-                    mFluteTaskManager[index] = new FluteTaskManagerQu(signalingDataSpec,avDataSpec, callBackInterface,index);
-                } else {
-                    if (null == mFluteTaskManager)
-                        mFluteTaskManager = new FluteTaskManagerNAB[2];
-                    mFluteTaskManager[index] = new FluteTaskManagerNAB(signalingDataSpec, avDataSpec, callBackInterface,index);
-                }
-                //new Thread(mFluteTaskManager[index]).start();
 
+                if (null == mFluteTaskManager)
+                        mFluteTaskManager = new FluteTaskManager[2];
+                    mFluteTaskManager[index] = new FluteTaskManager(signalingDataSpec, callBackInterface,index);
+            }else{
+
+                if (null == mFluteTaskManager)
+                    mFluteTaskManager = new FluteTaskManager[2];
+                mFluteTaskManager[index] = new FluteTaskManager(signalingDataSpec, avDataSpec, callBackInterface,index);
             }
 
     }
@@ -165,7 +152,7 @@ public class FluteReceiver  {
      * @param task  The FluteTaskManagerQu holding the data
      * @param state The state of the task manager (error, completed ...)
      */
-    public void handleTaskState(FluteTaskManagerBase task, int state){
+    public void handleTaskState(FluteTaskManager task, int state){
 //        Log.d(TAG,"Message to send: "+state);
 
         (mHandler.obtainMessage(state, task)).sendToTarget();

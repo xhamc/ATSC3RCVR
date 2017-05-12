@@ -104,10 +104,7 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
   public static final String DRM_LICENSE_URL = "drm_license_url";
   public static final String DRM_KEY_REQUEST_PROPERTIES = "drm_key_request_properties";
   public static final String PREFER_EXTENSION_DECODERS = "prefer_extension_decoders";
-  public static final String CHANNEL_NAME = "channel_name";
-  public static final String USB_EVENT = "usb_broadcast_event";
   public static final String TAG = "PlayerActivity";
-  private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
 
 
   public static final String ACTION_VIEW = "com.google.android.exoplayer.demo.action.VIEW";
@@ -125,7 +122,6 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
     DEFAULT_COOKIE_MANAGER.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER);
   }
 
-  private Realm realm;
   private Handler mainHandler;
   private EventLogger eventLogger;
   private SimpleExoPlayerView simpleExoPlayerView;
@@ -152,9 +148,7 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
   private boolean shouldAutoPlay;
   private int resumeWindow;
   private long resumePosition;
-  private BroadcastReceiver usbBroadCastReceiver;
-  private UsbManager usbManager;
-  private PendingIntent mPermissionIntent;
+
 
   private boolean stopped=false;
   private static boolean timerChannelChangeEnabled=false;
@@ -171,7 +165,6 @@ public class PlayerActivity extends Activity implements OnClickListener, ExoPlay
     clearResumePosition();
     mediaDataSourceFactory = buildDataSourceFactory(true);
     mainHandler = new Handler();
-//    realm = Realm.getDefaultInstance();
     if (CookieHandler.getDefault() != DEFAULT_COOKIE_MANAGER) {
       CookieHandler.setDefault(DEFAULT_COOKIE_MANAGER);
     }

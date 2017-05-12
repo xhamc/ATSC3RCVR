@@ -1,13 +1,11 @@
 package com.sony.tv.app.atsc3receiver1_0.app.Flute;
 
-import com.sony.tv.app.atsc3receiver1_0.app.LLS.EFDT_DATA;
 import com.sony.tv.app.atsc3receiver1_0.app.LLS.LLSData;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.StringReader;
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * Created by xhamc on 3/14/17.
@@ -33,9 +31,7 @@ public class EFDTXmlParse {
     String data;
 
     public EFDTXmlParse(final String data, final String type){
-        if (type.equals(SLTTAG) || type.equals(SYSTEMTIMETAG)) {
-            llsData = new LLSData(type, data);
-        }else if (type.equals(EFDT_INSTANCE_TAG)){
+        if (type.equals(EFDT_INSTANCE_TAG)){
             efdtData=new EFDT_DATA(data);
         }
         this.type=type;

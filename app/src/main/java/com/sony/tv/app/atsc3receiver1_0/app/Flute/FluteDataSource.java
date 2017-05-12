@@ -30,7 +30,7 @@ public class FluteDataSource implements DataSource {
     private static final String TAG="FluteDataSource";
     private DataSpec mExoPlayerUri;
     private FluteReceiver fluteReceiver;
-    private FluteFileManagerBase fileManager;
+    private FluteFileManager fileManager;
     private int thread;
     private int indexToFileManager=0;
 
