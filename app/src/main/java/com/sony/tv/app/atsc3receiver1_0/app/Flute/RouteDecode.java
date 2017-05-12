@@ -84,7 +84,7 @@ public class RouteDecode  {
                     expiry = System.currentTimeMillis() + ((data[EXPIRY_POSITION] & 0xff) << 24 | (data[EXPIRY_POSITION + 1] & 0xff) << 16 | (data[EXPIRY_POSITION + 2] & 0xff) << 8 | (data[EXPIRY_POSITION + 3] & 0xff)) * 1000;
                     maxObjectSize = ((data[EXT_FDT_MAX_OBJECT_SIZE_POSITION] & 0xff) << 24 | (data[EXT_FDT_MAX_OBJECT_SIZE_POSITION + 1] & 0xff) << 16 | (data[EXT_FDT_MAX_OBJECT_SIZE_POSITION + 2] & 0xff) << 8 | (data[EXT_FDT_MAX_OBJECT_SIZE_POSITION + 3] & 0xff));
                     String s = new String(data, EFDT_CONTENT_START_POSITION, packetSize - EFDT_CONTENT_START_POSITION);
-                    EFDT_DATA e = (new EFDTXmlParse(s, LLSXmlParse.EFDT_INSTANCE_TAG)).EFDTParse();
+                    EFDT_DATA e = (new EFDTXmlParse(s)).EFDTParse();
                     fileName = e.location;
                     contentLength = e.contentlength;
                     efdt_toi = e.toi;

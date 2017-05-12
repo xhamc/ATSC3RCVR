@@ -17,24 +17,17 @@ import java.io.StringReader;
  */
 
 public class EFDTXmlParse {
+    private static final String TAG="EFDTXMLParse";
+
     private XmlPullParserFactory factory;
     private XmlPullParser xpp;
-    private static final String TAG="XML";
-    private LLSData llsData;
     private EFDT_DATA efdtData;
 
-    public static final String SLTTAG="SLT";
-    public static final String SYSTEMTIMETAG="SystemTime";
-    public static final String EFDT_INSTANCE_TAG="EFDT-Instance";
-
-    String type;
     String data;
 
-    public EFDTXmlParse(final String data, final String type){
-        if (type.equals(EFDT_INSTANCE_TAG)){
-            efdtData=new EFDT_DATA(data);
-        }
-        this.type=type;
+    public EFDTXmlParse(final String data){
+        efdtData=new EFDT_DATA(data);
+
         this.data=data;
     }
 

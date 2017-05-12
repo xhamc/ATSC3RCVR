@@ -32,7 +32,9 @@ import static com.google.android.exoplayer2.util.Util.parseXsDuration;
 
 public class FluteFileManager {
 
+    private static final String TAG="FluteFileManager";
 
+    /**MPD timing constants**/
     public static final long AVAILABILITY_TIME_OFFSET=4500;                    //Offset from time the content is received in buffer to time reported to player
     public static final long MIN_BUFFER_TIME_LONG=0;
     private static final String MIN_BUFFER_TIME="PT2S";                         //Used by player to set lower buffer threshold
@@ -41,46 +43,48 @@ public class FluteFileManager {
     private static final String MINIMUM_UPDATE_PERIOD="PT0.75S";                //Frequency the player can request MPD (>0 else can hurt performance)
     private static final String SUGGESTED_PRESENTATION_DELAY="PT0S";
 
-    private static final String TAG="FileManager";
+    /**Buffer related constants**/
     public static final int MAX_SIGNALING_BUFFERSIZE=10000;                     //Size of the circular buffer to manage signaling
-    public static final int MAX_VIDEO_BUFFERSIZE=10000000;                      //Size of the circular buffer to manage video
+    public static final int MAX_AV_BUFFERSIZE=10000000;                         //Size of the circular buffer to manage audio and video
     private static final int MAX_FILE_RETENTION_MS=10000;                       //Max time to keep stale content around (unused)
 
-    private HashMap<String, ContentFileLocation> mapFileLocationsSig;           //**
-    private HashMap<String, ContentFileLocation> mapFileLocationsVid;           //**
-
-    private ArrayList<HashMap<String, ContentFileLocation>> arrayMapFileLocations;  //ArrayList of above
-    private HashMap<Long,String> map_TOI_FileNameSig;                        //**Given key TOI/TSI, return value FileName
-    private HashMap<Long,String> map_TOI_FileNameVid;                        //**
-    private ArrayList<HashMap<Long,String>> array_MapTOI_FileName;                           //ArrayList of above
-    private HashMap<Integer/*TSI*/, Integer/*BufferNo*/> mapGetBufferNumberFromTSI;             //retrieve the relevant FileManager from the TSI value
-
-    private byte[] signalingStorage;                                                //**
-    private byte[] videoStorage;                                                //Uninitialized circular buffers
-    private ArrayList<byte[]> storage=new ArrayList<>();                        //Array list of above
-
+    /**Buffering related variables**/
     private ReentrantLock lock = new ReentrantLock();                           //Lock for write and reading buffers
-
+    private HashMap<String, ContentFileLocation> mapFileLocationsSig;           //**Map signaling file name to signaling file location
+    private HashMap<String, ContentFileLocation> mapFileLocationsAV;            //**Map av file name to av file location
+    private ArrayList<HashMap<String, ContentFileLocation>> arrayMapFileLocations;  //ArrayList of above
+    private HashMap<Long /*TSI<<32+TOI*/,String> map_TOI_FileNameSig;           //**Given key TOI/TSI, return value Signaling file name
+    private HashMap<Long /*TSI<<32+TOI*/,String> map_TOI_FileNameAV;            //**Given key TOI/TSI, return value AV file name
+    private ArrayList<HashMap<Long,String>> array_MapTOI_FileName;              //ArrayList of above
+    private HashMap<Integer/*TSI*/, Integer/*BufferNo*/> mapGetBufferNumberFromTSI; //retrieve the relevant FileManager from the TSI value
+    private byte[] signalingStorage;                                            //Signaling data
+    private byte[] avStorage;                                                   //AV data
+    private ArrayList<byte[]> storage=new ArrayList<>();                        //Array list of above
+    private byte[] mMPDbytes;                                                   //Manifest file data (parsed with timing adjustments)
     private int[] firstAvailablePosition={0,0};                               //Tracks the first available write position in each buffer
-    private int[] maxAvailablePosition={MAX_SIGNALING_BUFFERSIZE-1,  MAX_VIDEO_BUFFERSIZE-1};  //Tracks the last available write position in each buffer
+    private int[] maxAvailablePosition={MAX_SIGNALING_BUFFERSIZE-1,  MAX_AV_BUFFERSIZE-1};  //Tracks the last available write position in each buffer
 
+    /**General usage**/
     private FluteFileManager sInstance;
+    private DataSpec baseDataSpec;                                               //Base URI for this filemanager
 
-    public DataSpec baseDataSpec;                                               //Base URI for this filemanager
-
+    /**MPD related**/
     private boolean first;                                                      //Indicates the first read from Exoplayer. Uses to set availability start time
     private long availabilityStartTime;                                         //AvailabilityStartTime calc from video write time with respect to period start/segment duration
     private int videoStartNumber;                                               //Used when faking the manifest only
     private long availabilityStartTimeOffset;                                   //Offset from this (set to static offset above)
-    private long liveReadFromBufferTime;
 
+    /**Ad Insertion related**/
     private AdContent lastAdInsertion;
     private String lastAdStart="";
 
+    /**Used by Open(). index is the calling thread**/
+    private int[] bytesToRead=new int[100];
+    private int[] bytesRead=new int [100];
+    private int[] bytesToSkip=new int[100];
+    private int[] byteOffset=new int[100];
 
-    public boolean manifestFound=false;
-    public boolean stsidFound=false;
-    public boolean usbdFound=false;
+
     private FluteTaskManager fluteTaskManager;
 
     public FluteFileManager(DataSpec dataSpec){
@@ -101,59 +105,35 @@ public class FluteFileManager {
     public void reset(){
 
         mapFileLocationsSig=new HashMap<>();
-        mapFileLocationsVid=new HashMap<>();
+        mapFileLocationsAV=new HashMap<>();
 
         arrayMapFileLocations = new ArrayList<>();
         map_TOI_FileNameSig = new HashMap<>();
-        map_TOI_FileNameVid = new HashMap<>();
+        map_TOI_FileNameAV = new HashMap<>();
         array_MapTOI_FileName =new ArrayList<>();
         mapGetBufferNumberFromTSI=new HashMap<>();             //retrieve the relevant FileManager from the TSI value
 
         signalingStorage=new byte[MAX_SIGNALING_BUFFERSIZE];
-        videoStorage=new byte[MAX_VIDEO_BUFFERSIZE];
+        avStorage=new byte[MAX_AV_BUFFERSIZE];
 
         arrayMapFileLocations.add(0,mapFileLocationsSig);
-        arrayMapFileLocations.add(1,mapFileLocationsVid);
+        arrayMapFileLocations.add(1,mapFileLocationsAV);
         array_MapTOI_FileName.add(0,map_TOI_FileNameSig);
-        array_MapTOI_FileName.add(1,map_TOI_FileNameVid);
+        array_MapTOI_FileName.add(1,map_TOI_FileNameAV);
 
         mapGetBufferNumberFromTSI.put(0, 0);
 
         storage.add(0,signalingStorage);
-        storage.add(1,videoStorage);
-
-        liveReadFromBufferTime=0;
-
+        storage.add(1,avStorage);
 
         first=true;
 
     }
-
-    public int getNumberOfVideoFiles(){
-        return map_TOI_FileNameVid.size();
-    }
-
     public void resetTimeStamp(){
         first=true;
     }
-
-
     public FluteFileManager getInstance(){ return sInstance; }
 
-
-    private static final int MPD=0;
-    private static final int SLS=1;
-    private static final int AV=2;
-
-    private byte[] mMPDbytes;
-
-    private HashMap<Integer, byte[]> threadBufferPointer=new HashMap<>();
-
-    private int[] bytesToRead=new int[100];
-    private int[] bytesRead=new int [100];
-    private int[] bytesToSkip=new int[100];
-    private int[] byteOffset=new int[100];
-    private boolean[] timeOffsetFirst=new boolean[100];
 
     private class FileBuffer{
         public byte[] buffer;
@@ -192,7 +172,7 @@ public class FluteFileManager {
 
                 String path=dataSpec.uri.getPath();
                 bytesToSkip[thread]=(int) dataSpec.position;
-                FileBuffer fb = openInternal(path, thread);
+                FileBuffer fb = openInternal(path);
                 if (fb==null){
                     Log.d(TAG, "Couldn't fine file while trying to open: "+path);
 
@@ -247,14 +227,12 @@ public class FluteFileManager {
                 throw new IOException("Read Length is less than 0");
 
             }
-            if (byteOffset[thread] + bytesRead[thread] + readLength < MAX_VIDEO_BUFFERSIZE) {
+            if (byteOffset[thread] + bytesRead[thread] + readLength < MAX_AV_BUFFERSIZE) {
                 System.arraycopy(fileBuffer[thread].buffer, byteOffset[thread] + bytesRead[thread], buffer, offset, readLength);
                 bytesRead[thread] += readLength;
             } else {
                 Log.e(TAG, "Error trying to read from local buffer, overrun: bytesRead: " + bytesRead[thread] + "  byteOffset: " + byteOffset[thread] + "  length:  " + readLength);
             }
-            //            listenertener.onBytesTransferred(this, read);
-            //        }
             return readLength;
         }finally{
             lock.unlock();
@@ -381,20 +359,23 @@ public class FluteFileManager {
 
     }
 
+    /**
+     * Based on the tsi, set buffer storage to signaling or audio video
+     * @param tsi
+     */
     public void setMappingForTSI(int[] tsi){
         for (int i=0; i<tsi.length; i++) {
             int index=(tsi[i]==0?0:1);
-            mapGetBufferNumberFromTSI.put(tsi[i], index); //TODO: Use bw to determine video if there is both audio and video
+            mapGetBufferNumberFromTSI.put(tsi[i], index);
         }
     }
 
     /**
      * Determines the buffer location of the file and returns it. If request is manifest then return adjusted manifest (buffer times, AST, ad inserted periods)
      * @param fileName
-     * @param thread
      * @return
      */
-    private FileBuffer openInternal(String fileName, int thread){
+    private FileBuffer openInternal(String fileName){
         Log.d(TAG,"Opening new File: ***********"+fileName);
 
         int index=0; ContentFileLocation f; int contentLength=0;
@@ -423,8 +404,7 @@ public class FluteFileManager {
 
             if (f != null) {
 
-                liveReadFromBufferTime=f.time;              //Exoplayer is reading from here so is closest time to live edge we know of
-                Log.d("DebugTime".concat(baseDataSpec.uri.getHost()),"liveBufferTimeRead offset from period zero secs: "+(liveReadFromBufferTime-availabilityStartTime-periodStart)/1000.0 +
+                Log.d("DebugTime".concat(baseDataSpec.uri.getHost()),"liveBufferTimeRead offset from period zero secs: "+(f.time-availabilityStartTime-periodStart)/1000.0 +
                         "  fileName: "+f.fileName);
                 index--;
                 return new FileBuffer(storage.get(index), f.contentLength, f.start);
@@ -456,7 +436,7 @@ public class FluteFileManager {
             mpdParser.MPDParse();
 
             availabilityStartTimeOffset=AVAILABILITY_TIME_OFFSET;
-            availabilityStartTime=mpdParser.mpd.getAvailabilityStartTimeFromVideos(mapFileLocationsVid)+availabilityStartTimeOffset-firstTimeOffset;
+            availabilityStartTime=mpdParser.mpd.getAvailabilityStartTimeFromVideos(mapFileLocationsAV)+availabilityStartTimeOffset-firstTimeOffset;
 
             Log.d(TAG,"AvailabilityStartTime set to "+availabilityStartTime);
             first=false;
